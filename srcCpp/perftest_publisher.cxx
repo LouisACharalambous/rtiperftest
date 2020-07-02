@@ -6,7 +6,11 @@
 #define STRINGIFY(x) #x
 #define TO_STRING(x) STRINGIFY(x)
 
-#include "RTIDDSImpl.h"
+#ifdef RTI_PERF_TSS
+  #include "RTITSSImpl.h"
+#else
+  #include "RTIDDSImpl.h"
+#endif
 #ifdef RTI_PERF_PRO
   #include "RTIRawTransportImpl.h"
 #endif
@@ -159,7 +163,9 @@ int perftest_cpp::Run(int argc, char *argv[])
 
     _printer.initialize(&_PM);
 
-  #if defined(RTI_PERF_PRO) || defined(RTI_PERF_MICRO)
+  #ifdef RTI_PERF_TSS
+    _MessagingImpl = new RTITSSImpl<FACE::DM::TestData_t>();
+  #elif defined(RTI_PERF_PRO) || defined(RTI_PERF_MICRO)
     if (_PM.get<bool>("rawTransport")) {
       #ifdef RTI_PERF_PRO
         _MessagingImpl = new RTIRawTransportImpl();
@@ -1456,7 +1462,7 @@ public:
             cpu.initialize();
         }
 
-      #ifdef RTI_PERF_PRO
+      #if !defined(RTI_PERF_TSS) && defined(RTI_PERF_PRO)
         if (_PM->get<bool>("serializationTime")) {
 
             mask = (_PM->get<int>("unbounded") != 0) << 0;

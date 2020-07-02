@@ -33,6 +33,14 @@ const string ANNOUNCEMENT_TOPIC_NAME = "Announcement";
  *
  */
 
+/*
+ * FACE Types need to be inside a FACE::DM module
+ */
+#ifdef RTI_PERF_TSS
+module FACE {
+module DM {
+#endif
+
 @final
 struct TestData_t {
     octet key[KEY_SIZE];
@@ -51,6 +59,14 @@ struct TestData_t {
   #endif
 
 };
+
+#ifdef RTI_PERF_TSS
+}; /* DM module */
+}; /* FACE module */
+#endif
+
+/* FACE does not support keyed types not large data (yet) */
+#ifndef RTI_PERF_TSS
 
 @final
 struct TestDataKeyed_t {
@@ -103,6 +119,8 @@ struct TestDataKeyedLarge_t {
     long custom_type_size;
   #endif
 };
+
+#endif /* RTI_PERF_TSS */
 
 /********************************** FLATDATA **********************************/
 #ifdef RTI_FLATDATA_AVAILABLE
