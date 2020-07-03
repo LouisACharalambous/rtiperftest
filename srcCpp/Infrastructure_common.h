@@ -20,10 +20,12 @@
   #define PERFT_TIME_UNIT "ns"
 #endif
 
+#if defined(RTI_PERF_TSS) || defined(RTI_PERF_MICRO) || defined(RTI_PERF_PRO)
 #ifdef RTI_PERF_MICRO
   #include "Infrastructure_micro.h"
 #elif RTI_PERF_PRO
   #include "Infrastructure_pro.h"
+#endif
 #elif EPROSIMA_PERF_FASTDDS
   #include "Infrastructure_fastDDS.h"
 #endif

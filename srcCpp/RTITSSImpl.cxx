@@ -69,9 +69,9 @@ auto RTITSSImpl<FACE::DM::TestData_t>::_createTypedSubscriber(FACE::TSS::CONNECT
 
 template <typename T>
 FACE::TSS::CONNECTION_ID_TYPE RTITSSImpl<T>::_createConnection(
-        const char *name, FACE::RETURN_CODE_TYPE::Value &retcode)
+        std::string name, FACE::RETURN_CODE_TYPE::Value &retcode)
 {
-    FACE::TSS::CONNECTION_NAME_TYPE connection_name(name);
+    FACE::TSS::CONNECTION_NAME_TYPE connection_name(name.c_str());
     FACE::TSS::MESSAGE_SIZE_TYPE max_message_size;
     FACE::TSS::CONNECTION_ID_TYPE connection_id;
     FACE::TIMEOUT_TYPE timeout(0);
@@ -90,12 +90,13 @@ IMessagingWriter *RTITSSImpl<T>::CreateWriter(const char *topic_name)
 {
     FACE::TSS::CONNECTION_ID_TYPE connection_id;
     FACE::RETURN_CODE_TYPE::Value retcode;
+    std::string name = "writer " + std::string(topic_name);
 
-    connection_id = _createConnection(topic_name, retcode);
+    connection_id = _createConnection(name, retcode);
     if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
 	{
-		fprintf(stderr, "Failed Create_Connection for %s (rc=%d)\n",
-                topic_name, retcode);
+		fprintf(stderr, "Failed Create_Connection %s for %s (writer) (rc=%d)\n",
+                name.c_str(), topic_name, retcode);
         return NULL;
 	}
 
@@ -109,11 +110,13 @@ IMessagingReader *RTITSSImpl<T>::CreateReader(const char *topic_name,
 {
     FACE::TSS::CONNECTION_ID_TYPE connection_id;
     FACE::RETURN_CODE_TYPE::Value retcode;
+    std::string name = "reader " + std::string(topic_name);
 
-    connection_id = _createConnection(topic_name, retcode);
+    connection_id = _createConnection(name, retcode);
     if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
 	{
-		fprintf(stderr, "Failed Create_Connection (rc=%d)\n", retcode);
+		fprintf(stderr, "Failed Create_Connection %s for %s (reader) (rc=%d)\n",
+                name.c_str(), topic_name, retcode);
         return NULL;
 	}
 
@@ -232,12 +235,22 @@ inline bool TSSConnection<Type, TypedTS>::_send(const TestMessage &message)
     _sample.timestamp_usec = _message.timestamp_usec;
     _sample.latency_ping = _message.latency_ping;
 
+#ifdef RTI_PERF_PRO
     if (!DDS_OctetSeq_loan_contiguous(&_sample.bin_data,
-                                     (DDS_Octet*) _message.data,
-                                     _message.size, _message.size)) {
-            fprintf(stderr, "bin_data.loan_contiguous() failed.\n");
-            return false;
+                                      (DDS_Octet*) _message.data,
+                                      _message.size, _message.size)) {
+        fprintf(stderr, "bin_data.loan_contiguous() failed.\n");
+        return false;
     }
+#else
+    // TODO: To be implemented
+    if (!FACE_sequence_loan_contiguous(&_sample.bin_data,
+                                       (DDS_Octet*) _message.data,
+                                       _message.size, _message.size)) {
+        fprintf(stderr, "bin_data.loan_contiguous() failed.\n");
+        return false;
+    }
+#endif // RTI_PERF_PRO
 
     _typedTS->Send_Message(_connection_id,
                            timeout,
@@ -250,10 +263,17 @@ inline bool TSSConnection<Type, TypedTS>::_send(const TestMessage &message)
         return false;
 	}
 
+#ifdef RTI_PERF_PRO
     if (!DDS_OctetSeq_unloan(&_sample.bin_data)) {
         fprintf(stderr, "bin_data.unloan() failed.\n");
         return false;
     }
+#else
+    if (!FACE_sequence_unloan(&_sample.bin_data)) {
+        fprintf(stderr, "bin_data.unloan() failed.\n");
+        return false;
+    }
+#endif // RTI_PERF_PRO
 
     return true;
 }

@@ -84,6 +84,10 @@ list(APPEND CMAKE_MODULE_PATH ${RTITSSHOME}/resource/cmake/Toolchains)
 project(perftest C CXX)
 include(ConnextTss)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Toolchain for this platform
 include(Architecture/${RTI_TSS_PLATFORM} OPTIONAL)
 
@@ -152,7 +156,15 @@ ADD_CUSTOM_COMMAND(OUTPUT ${TSS_CONFIG_SRC}
 set(APP_NAME perftest_cpp_tss_${RTI_CONNEXT_TYPE})
 add_executable(${APP_NAME})
 
-add_definitions(  -DRTI_LANGUAGE_CPP_TRADITIONAL -DO3 -DRTI_PERF_TSS -DRTI_PERF_PRO )
+add_definitions( -DRTI_LANGUAGE_CPP_TRADITIONAL -O3 -DRTI_PERF_TSS )
+
+if (${RTI_CONNEXT_TYPE} MATCHES ${RTI_CONNEXT_PRO_TYPE})
+    add_definitions( -DRTI_PERF_PRO )
+else()
+    add_definitions(-DRTI_PERF_MICRO )
+endif()
+
+add_definitions()
 
 list(APPEND PERFTEST_SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/perftest_publisher.cxx

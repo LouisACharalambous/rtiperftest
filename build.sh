@@ -16,6 +16,10 @@ cStringifyFile_script="${script_location}/resource/scripts/cStringifyFile.pl"
 qos_file="${script_location}/perftest_qos_profiles.xml"
 doc_folder="${script_location}/srcDoc"
 generate_doc_folder="${script_location}/doc"
+resource_folder="${script_location}/resource"
+
+# By default we will not build TSS with Pro libs
+BUILD_TSS=0
 
 # By default we will build pro, not micro
 BUILD_MICRO=0
@@ -209,6 +213,10 @@ function clean()
     rm -rf "${script_location}"/srcCpp/gen
     rm -rf "${script_location}"/srcCpp/perftest_build
     rm -rf "${script_location}"/srcCpp/perftestApplication.*
+    rm -rf "${script_location}"/srcCpp/perftest_TypeSupport.*
+    rm -rf "${script_location}"/srcCpp/perftest_QosSupport.*
+    rm -rf "${script_location}"/srcCpp/perftest_Config.*
+    rm -rf "${script_location}"/srcCpp/perftest_TypedTS*
     clean_custom_type_files
     clean_documentation
     clean_src_cpp_common
@@ -367,15 +375,15 @@ function library_sufix_calculation()
 
 function additional_defines_calculation()
 {
-    additional_defines=""
+    additional_defines="DRTI_PERF_PRO"
     additional_rti_libs=""
 
     # Avoid optimized out variables when debugging
     if [ "${RELEASE_DEBUG}" == "release" ]; then
         echo -e "${INFO_TAG} C++ code will be optimized."
-        additional_defines=${additional_defines}"O3"
+        additional_defines=${additional_defines}" O3"
     else
-        additional_defines=${additional_defines}"O0"
+        additional_defines=${additional_defines}" O0"
     fi
 
     if [ "${LEGACY_DD_IMPL}" == "1" ]; then
@@ -456,7 +464,8 @@ function additional_defines_calculation_micro()
             additional_included_libraries="nsl;rt;"
         fi
     fi
-    additional_defines="RTI_LANGUAGE_CPP_TRADITIONAL RTI_MICRO O3"${additional_defines}
+
+    additional_defines="RTI_PERF_MICRO RTI_LANGUAGE_CPP_TRADITIONAL RTI_MICRO O3"${additional_defines}
 
     if [ "${RTI_PERFTEST_NANO_CLOCK}" == "1" ]; then
         additional_defines=${additional_defines}" DRTI_PERFTEST_NANO_CLOCK"
@@ -923,6 +932,75 @@ function build_micro_cpp()
     fi
 }
 
+function build_tss_cpp()
+{
+    copy_src_cpp_common
+
+    ##############################################################################
+    # Generate files for the custom type files
+    additional_defines_custom_type=""
+    additional_header_files_custom_type=""
+    additional_source_files_custom_type=""
+
+    if [ "${USE_CUSTOM_TYPE}" == "1" ]; then
+        build_cpp_custom_type
+    fi
+
+    if [ "${BUILD_MICRO}" == "1" ]; then
+        additional_defines_calculation_micro
+        TSS_IMPL="micro"
+    else
+        additional_defines_calculation "CppTraditional"
+        TSS_IMPL="pro"
+    fi
+
+    additional_defines=${additional_defines}" DRTI_PERF_TSS"
+
+    cp "${classic_cpp_folder}/perftest_publisher.cxx" \
+    "${classic_cpp_folder}/perftest_subscriber.cxx"
+
+    cp "${resource_folder}/tss/CMakeLists.txt" \
+    "${classic_cpp_folder}/CMakeLists.txt"
+
+    cp "${resource_folder}/tss/perftest_Config.c" \
+    "${classic_cpp_folder}/perftest_Config.c"
+
+    ##############################################################################
+    # Compile srcCpp code
+    echo ""
+    echo -e "${INFO_TAG} Compiling perftest_cpp"
+    cd "${classic_cpp_folder}"
+
+    cmake_generate_command="RTITSSARCH=${platform} ${CMAKE_EXE}\
+                            -DRTI_CONNEXT_TYPE=${TSS_IMPL} \
+                            -DRTI_TSS_ENABLE_FACE_COMPLIANCE=${FACE_COMPLIANCE} \
+                            -DCMAKE_BUILD_TYPE=${RELEASE_DEBUG} \
+                            -G \"Unix Makefiles\" \
+                            -B./perftest_build -H."
+
+	echo -e "${INFO_TAG} Cmake Generate Command: $cmake_generate_command"
+    eval $cmake_generate_command
+    if [ "$?" != 0 ]; then
+        echo -e "${ERROR_TAG} Failure generating makefiles with cmake for ${classic_cpp_lang_string}."
+        cd ..
+        exit -1
+    fi
+
+	cmake_build_command="${CMAKE_EXE} --build ./perftest_build --config ${RELEASE_DEBUG}"
+    	echo -e "${INFO_TAG} Cmake Build Command: $cmake_build_command"
+    eval $cmake_build_command
+    if [ "$?" != 0 ]; then
+        echo -e "${ERROR_TAG} Failure compiling code for ${classic_cpp_lang_string}."
+        cd ..
+        exit -1
+    fi
+
+    echo -e "${INFO_TAG} Compilation successful"
+    cd ..
+
+    clean_src_cpp_common
+}
+
 function build_cpp03()
 {
     copy_src_cpp_common
@@ -1240,6 +1318,9 @@ while [ "$1" != "" ]; do
             clean
             exit
             ;;
+        --tss)
+            BUILD_TSS=1
+            ;;
         --micro)
             BUILD_MICRO=1
             ;;
@@ -1377,7 +1458,16 @@ done
 
 executable_checking
 
-if [ "${BUILD_MICRO}" -eq "1" ]; then
+if [ "${BUILD_TSS}" -eq "1" ]; then
+    rtiddsgen_executable="$RTITSSHOME/bin/rtiddsgen"
+    classic_cpp_lang_string=FACE3C++
+
+    if [ "${BUILD_CPP}" -eq "1" ]; then
+        library_sufix_calculation
+        build_tss_cpp
+    fi
+
+elif [ "${BUILD_MICRO}" -eq "1" ]; then
 
     rtiddsgen_executable="$RTIMEHOME/rtiddsgen/scripts/rtiddsgen"
 

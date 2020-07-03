@@ -11,11 +11,6 @@
 #include "perftest_TypedTS_Impl.hpp"
 #include "RTI/TSS/Base.hpp"
 
-#if defined(RTI_DARWIN) && !defined(RTI_PERF_MICRO)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
-
 template <class Type, class TypedTS>
 class TSSConnection
 {
@@ -32,12 +27,7 @@ protected:
 public:
     TSSConnection(FACE::TSS::CONNECTION_ID_TYPE connection_id)
         : _connection_id(connection_id),
-          _typedTS(new TypedTS())
-    {
-        if (!DDS_OctetSeq_initialize(&_sample.bin_data)) {
-            fprintf(stderr, "Failed to initialize bin_data\n");
-        }
-    }
+          _typedTS(new TypedTS()) {}
 
     ~TSSConnection() { delete _typedTS; }
 };
@@ -54,7 +44,7 @@ class RTITSSImpl : public IMessaging
     };
 
     FACE::TSS::CONNECTION_ID_TYPE _createConnection(
-            const char *name, FACE::RETURN_CODE_TYPE::Value &retcode);
+            std::string name, FACE::RETURN_CODE_TYPE::Value &retcode);
 
     auto _createTypedPublisher(FACE::TSS::CONNECTION_ID_TYPE conn_id);
     auto _createTypedSubscriber(FACE::TSS::CONNECTION_ID_TYPE conn_id);
