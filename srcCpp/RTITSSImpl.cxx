@@ -13,21 +13,21 @@
 #endif
 
 /* RTITSSImpl implementation */
-template <typename T>
-RTITSSImpl<T>::RTITSSImpl()
+template <class Type, class TypedTS, class TypedCB>
+RTITSSImpl<Type, TypedTS, TypedCB>::RTITSSImpl()
 {
     _tss = new RTI::TSS::Base;
     _pong_semaphore = NULL;
 }
 
-template <typename T>
-RTITSSImpl<T>::~RTITSSImpl()
+template <class Type, class TypedTS, class TypedCB>
+RTITSSImpl<Type, TypedTS, TypedCB>::~RTITSSImpl()
 {
     delete _tss;
 }
 
-template <typename T>
-bool RTITSSImpl<T>::Initialize(ParameterManager &PM, perftest_cpp *parent)
+template <class Type, class TypedTS, class TypedCB>
+bool RTITSSImpl<Type, TypedTS, TypedCB>::Initialize(ParameterManager &PM, perftest_cpp *parent)
 {
     FACE::RETURN_CODE_TYPE::Value retcode;
 
@@ -48,13 +48,13 @@ bool RTITSSImpl<T>::Initialize(ParameterManager &PM, perftest_cpp *parent)
     return true;
 }
 
-template <typename T>
-void RTITSSImpl<T>::Shutdown()
+template <class Type, class TypedTS, class TypedCB>
+void RTITSSImpl<Type, TypedTS, TypedCB>::Shutdown()
 {
     FACE::RETURN_CODE_TYPE::Value retcode;
 
-    for (FACE::TSS::CONNECTION_ID_TYPE conn : _connections) {
-        _tss->Destroy_Connection(conn, retcode);
+    for (int i = 0; i < _connections.size(); ++i) {
+        _tss->Destroy_Connection(_connections[i], retcode);
         if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
 	    {
 		    fprintf(stderr, "Failed destroy connection (rc=%d)\n", retcode);
@@ -67,38 +67,14 @@ void RTITSSImpl<T>::Shutdown()
     }
 }
 
-template <typename T>
-std::string RTITSSImpl<T>::PrintConfiguration()
+template <class Type, class TypedTS, class TypedCB>
+std::string RTITSSImpl<Type, TypedTS, TypedCB>::PrintConfiguration()
 {
     return "\tSome TSS Config";
 }
 
-template <>
-auto RTITSSImpl<FACE::DM::TestData_t>::_createTypedPublisher(FACE::TSS::CONNECTION_ID_TYPE conn_id)
-{
-    return new RTITSSPublisher<FACE::DM::TestData_t,
-                              TestData_t::TypedTS,
-                              TestData_t::Read_Callback>(conn_id, _pong_semaphore);
-}
-
-template <>
-auto RTITSSImpl<FACE::DM::TestData_t>::_createTypedSubscriber(FACE::TSS::CONNECTION_ID_TYPE conn_id,
-                                                              IMessagingCB *callback)
-{
-    return new RTITSSSubscriber<FACE::DM::TestData_t,
-                                TestData_t::TypedTS,
-                                TestData_t::Read_Callback>(conn_id, _pong_semaphore, callback);
-}
-
-template <>
-int RTITSSImpl<FACE::DM::TestData_t>::_serializeTyped(
-        FACE::DM::TestData_t *data, unsigned int &size)
-{
-    return FACE_DM_TestData_tPlugin_serialize_to_cdr_buffer(NULL, &size, data);
-}
-
-template <typename T>
-FACE::TSS::CONNECTION_ID_TYPE RTITSSImpl<T>::_createConnection(
+template <class Type, class TypedTS, class TypedCB>
+FACE::TSS::CONNECTION_ID_TYPE RTITSSImpl<Type, TypedTS, TypedCB>::_createConnection(
         std::string name, FACE::RETURN_CODE_TYPE::Value &retcode)
 {
     FACE::TSS::CONNECTION_NAME_TYPE connection_name(name.c_str());
@@ -115,55 +91,66 @@ FACE::TSS::CONNECTION_ID_TYPE RTITSSImpl<T>::_createConnection(
     return connection_id;
 }
 
-template <typename T>
-IMessagingWriter *RTITSSImpl<T>::CreateWriter(const char *topic_name)
+template <class Type, class TypedTS, class TypedCB>
+IMessagingWriter *RTITSSImpl<Type, TypedTS, TypedCB>::CreateWriter(const char *topic_name)
 {
+    std::string name = "writer " + std::string(topic_name);
     FACE::TSS::CONNECTION_ID_TYPE connection_id;
     FACE::RETURN_CODE_TYPE::Value retcode;
-    std::string name = "writer " + std::string(topic_name);
 
     connection_id = _createConnection(name, retcode);
-    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-	{
-		fprintf(stderr, "Failed Create_Connection %s for %s (writer) (rc=%d)\n",
-                name.c_str(), topic_name, retcode);
+    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
+		fprintf(stderr, "Failed Create_Connection %s (writer) (rc=%d)\n",
+                name.c_str(), retcode);
         return NULL;
 	}
 
     _connections.push_back(connection_id);
-    return _createTypedPublisher(connection_id);
+
+    return new RTITSSPublisher<Type, TypedTS, TypedCB>(
+                connection_id, _pong_semaphore);
 }
 
-template <typename T>
-IMessagingReader *RTITSSImpl<T>::CreateReader(const char *topic_name,
+template <class Type, class TypedTS, class TypedCB>
+IMessagingReader *RTITSSImpl<Type, TypedTS, TypedCB>::CreateReader(const char *topic_name,
                                               IMessagingCB *callback)
 {
+    std::string name = "reader " + std::string(topic_name);
     FACE::TSS::CONNECTION_ID_TYPE connection_id;
     FACE::RETURN_CODE_TYPE::Value retcode;
-    std::string name = "reader " + std::string(topic_name);
 
     connection_id = _createConnection(name, retcode);
-    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-	{
-		fprintf(stderr, "Failed Create_Connection %s for %s (reader) (rc=%d)\n",
-                name.c_str(), topic_name, retcode);
+    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
+		fprintf(stderr, "Failed Create_Connection %s (reader) (rc=%d)\n",
+                name.c_str(), retcode);
         return NULL;
 	}
 
     _connections.push_back(connection_id);
-    return _createTypedSubscriber(connection_id, callback);
+
+    return new RTITSSSubscriber<Type, TypedTS, TypedCB>(
+                connection_id, _pong_semaphore, callback);
 }
 
-template <typename T>
-unsigned long RTITSSImpl<T>::GetInitializationSampleCount()
+template <class Type, class TypedTS, class TypedCB>
+unsigned long RTITSSImpl<Type, TypedTS, TypedCB>::GetInitializationSampleCount()
 {
     return 0; // TODO: Implement
 }
 
-template <typename T>
-bool RTITSSImpl<T>::get_serialized_overhead_size(unsigned int &overhead_size)
+template <>
+int RTITSSImpl<FACE::DM::TestData_t,
+               TestData_t::TypedTS,
+               TestData_t::Read_Callback>::_serializeTyped(
+        FACE::DM::TestData_t *data, unsigned int &size)
 {
-    T data;
+    return FACE_DM_TestData_tPlugin_serialize_to_cdr_buffer(NULL, &size, data);
+}
+
+template <class Type, class TypedTS, class TypedCB>
+bool RTITSSImpl<Type, TypedTS, TypedCB>::get_serialized_overhead_size(unsigned int &overhead_size)
+{
+    Type data;
     data.entity_id = 0;
     data.seq_num = 0;
     data.timestamp_sec = 0;
@@ -394,10 +381,9 @@ unsigned int RTITSSSubscriber<Type, TypedTS, TypedCB>::getSampleCountPeak()
 }
 
 template <class Type, class TypedTS, class TypedCB>
-TSSConnection<Type, TypedTS, TypedCB>::TSSConnection(FACE::TSS::CONNECTION_ID_TYPE connection_id,
-                                                     IMessagingCB *callback)
-        : _connection_id(connection_id),
-          _typedTS(new TypedTS)
+TSSConnection<Type, TypedTS, TypedCB>::TSSConnection(
+        FACE::TSS::CONNECTION_ID_TYPE connection_id, IMessagingCB *callback)
+        : _connection_id(connection_id), _typedTS(new TypedTS), _typedCB(NULL)
 {
     RTI_TSS_Impl *rti_tss = NULL;
     DDS_DomainParticipant *participant = NULL;
@@ -455,7 +441,6 @@ TSSConnection<Type, TypedTS, TypedCB>::TSSConnection(FACE::TSS::CONNECTION_ID_TY
     }
 
     if (callback != NULL) {
-        fprintf(stderr, "Registering callback.\n");
         _typedCB = new TSSListener<Type, TypedCB>(callback);
         _typedTS->Register_Callback(_connection_id, *_typedCB, retcode);
         if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
@@ -470,7 +455,7 @@ template <class Type, class TypedTS, class TypedCB>
 TSSConnection<Type, TypedTS, TypedCB>::~TSSConnection()
 {
     if (_typedTS != NULL) delete _typedTS;
-    if (_typedCB != NULL) delete _typedCB;
+    //if (_typedCB != NULL) delete _typedCB;
 }
 
 template <class Type, class TypedTS, class TypedCB>
@@ -585,4 +570,4 @@ void TSSListener<Type, TypedCB>::Callback_Handler(
     _callback->ProcessMessage(_message);
 }
 
-template class RTITSSImpl<FACE::DM::TestData_t>;
+template class RTITSSImpl<FACE::DM::TestData_t, TestData_t::TypedTS, TestData_t::Read_Callback>;

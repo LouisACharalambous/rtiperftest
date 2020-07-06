@@ -164,7 +164,9 @@ int perftest_cpp::Run(int argc, char *argv[])
     _printer.initialize(&_PM);
 
   #ifdef RTI_PERF_TSS
-    _MessagingImpl = new RTITSSImpl<FACE::DM::TestData_t>();
+    _MessagingImpl = new RTITSSImpl<FACE::DM::TestData_t,
+                                    TestData_t::TypedTS,
+                                    TestData_t::Read_Callback>();
   #elif defined(RTI_PERF_PRO) || defined(RTI_PERF_MICRO)
     if (_PM.get<bool>("rawTransport")) {
       #ifdef RTI_PERF_PRO
