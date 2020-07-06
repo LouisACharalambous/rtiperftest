@@ -90,6 +90,12 @@ auto RTITSSImpl<FACE::DM::TestData_t>::_createTypedSubscriber(FACE::TSS::CONNECT
                                 TestData_t::Read_Callback>(conn_id, _pong_semaphore, callback);
 }
 
+template <>
+int RTITSSImpl<FACE::DM::TestData_t>::_serializeTyped(
+        FACE::DM::TestData_t *data, unsigned int &size)
+{
+    return FACE_DM_TestData_tPlugin_serialize_to_cdr_buffer(NULL, &size, data);
+}
 
 template <typename T>
 FACE::TSS::CONNECTION_ID_TYPE RTITSSImpl<T>::_createConnection(
@@ -157,7 +163,26 @@ unsigned long RTITSSImpl<T>::GetInitializationSampleCount()
 template <typename T>
 bool RTITSSImpl<T>::get_serialized_overhead_size(unsigned int &overhead_size)
 {
-    return true; // TODO: Implement
+    T data;
+    data.entity_id = 0;
+    data.seq_num = 0;
+    data.timestamp_sec = 0;
+    data.timestamp_usec = 0;
+    data.latency_ping = 0;
+
+    if (!DDS_OctetSeq_ensure_length(&data.bin_data, 0, 0)) {
+        fprintf(stderr, "Failed DDS_OctetSeq_ensure_length\n");
+        return false;
+    }
+
+    if (_serializeTyped(&data, overhead_size) != DDS_RETCODE_OK) {
+        fprintf(stderr, "Failed to serialize to CDR buffer\n");
+        return false;
+    }
+
+    overhead_size -= RTI_CDR_ENCAPSULATION_HEADER_SIZE;
+
+    return true;
 }
 
 

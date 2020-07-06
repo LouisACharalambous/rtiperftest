@@ -9,6 +9,7 @@
 #include "perftest_cpp.h"
 #include "perftest.hxx"
 #include "perftestSupport.h"
+#include "perftestPlugin.h"
 #include "perftest_TypedTS_Impl.hpp"
 #include "RTI/TSS/Base.hpp"
 
@@ -66,6 +67,10 @@ class RTITSSImpl : public IMessaging
     FACE::TSS::CONNECTION_ID_TYPE _createConnection(
             std::string name, FACE::RETURN_CODE_TYPE::Value &retcode);
 
+    /* NOTE: The following methods are type-specific,
+     * so they have to be defined for each type.
+     */
+    int _serializeTyped(T *data, unsigned int &size);
     auto _createTypedPublisher(FACE::TSS::CONNECTION_ID_TYPE conn_id);
     auto _createTypedSubscriber(FACE::TSS::CONNECTION_ID_TYPE conn_id,
                                 IMessagingCB *callback);
