@@ -85,8 +85,10 @@ project(perftest C CXX)
 include(ConnextTss)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_compile_options(-Wno-deprecated-register)
+
 
 # Toolchain for this platform
 include(Architecture/${RTI_TSS_PLATFORM} OPTIONAL)
