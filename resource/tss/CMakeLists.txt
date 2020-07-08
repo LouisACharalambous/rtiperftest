@@ -138,13 +138,15 @@ ADD_CUSTOM_COMMAND(OUTPUT ${GEN_SOURCES} ${GEN_HEADERS}
                 ${CMAKE_CURRENT_SOURCE_DIR}/../srcIdl/perftest.idl)
 
 
-set(TSS_CONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/perftest_QosSupport.c
-                   ${CMAKE_CURRENT_SOURCE_DIR}/perftest_Config.c)
+set(TSS_CONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/perftest_QosSupport.cxx
+                   ${CMAKE_CURRENT_SOURCE_DIR}/perftest_Config.cxx)
 
 ADD_CUSTOM_COMMAND(OUTPUT ${TSS_CONFIG_SRC}
         DEPENDS ${GEN_SOURCES} ${GEN_HEADERS}
         COMMENT "Copying TSS Config and QoS"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -E remove -f perftest_QosSupport.c
+        COMMAND ${CMAKE_COMMAND} -E remove -f perftest_config.c
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ../resource/tss/ .)
 

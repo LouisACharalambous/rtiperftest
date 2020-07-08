@@ -12,12 +12,16 @@
   #include "ndds/ndds_cpp.h"
 #endif
 
+/* Pointer to PM used by RTI_TSS_ConfigData_get_config_data */
+extern ParameterManager *RTI_TSS_gv_pm;
+
 /* RTITSSImpl implementation */
 template <class Type, class TypedTS, class TypedCB>
 RTITSSImpl<Type, TypedTS, TypedCB>::RTITSSImpl()
 {
     _tss = new RTI::TSS::Base;
     _pong_semaphore = NULL;
+    _pm = NULL;
 }
 
 template <class Type, class TypedTS, class TypedCB>
@@ -31,13 +35,17 @@ bool RTITSSImpl<Type, TypedTS, TypedCB>::Initialize(ParameterManager &PM, perfte
 {
     FACE::RETURN_CODE_TYPE::Value retcode;
 
+    /* Set reference for PM to be used at RTI_TSS_ConfigData_get_config_data */
+    RTI_TSS_gv_pm = &PM;
+    _pm = &PM;
+
     _tss->Initialize("RTI_TSS_STATIC_INITIALIZATION##perftest", retcode);
     if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
 		fprintf(stderr, "Failed Initialize(rc=%d)\n", retcode);
 		return false;
 	}
 
-    if (PM.get<bool>("latencyTest")) {
+    if (_pm->get<bool>("latencyTest")) {
         _pong_semaphore = PerftestSemaphore_new();
         if (_pong_semaphore == NULL) {
             fprintf(stderr, "Failed create pong semaphore\n");
@@ -70,7 +78,29 @@ void RTITSSImpl<Type, TypedTS, TypedCB>::Shutdown()
 template <class Type, class TypedTS, class TypedCB>
 std::string RTITSSImpl<Type, TypedTS, TypedCB>::PrintConfiguration()
 {
-    return "\tSome TSS Config";
+    std::ostringstream stringStream;
+
+    stringStream << "\tDomain: " << _pm->get<int>("domain") << std::endl;
+
+    stringStream << "\tFACE Profile: ";
+#if ENABLE_FACE_COMPLIANCE == FACE_COMPLIANCE_LEVEL_NONE
+    stringStream << "None";
+#elif ENABLE_FACE_COMPLIANCE == FACE_COMPLIANCE_LEVEL_SECURITY
+    stringStream << "Security";
+#elif ENABLE_FACE_COMPLIANCE == FACE_COMPLIANCE_LEVEL_SAFETY_BASE
+    stringStream << "Safety Base";
+#elif ENABLE_FACE_COMPLIANCE == FACE_COMPLIANCE_LEVEL_SAFETY_EXTENDED
+    stringStream << "Safety Extended";
+#elif ENABLE_FACE_COMPLIANCE == FACE_COMPLIANCE_LEVEL_GENERAL
+    stringStream << "General Purpose";
+#else
+    #warning "Unknown FACE profile";
+    stringStream << "Unknown - " << ENABLE_FACE_COMPLIANCE;
+#endif
+
+    stringStream << std::endl;
+
+    return stringStream.str();
 }
 
 template <class Type, class TypedTS, class TypedCB>
@@ -135,7 +165,7 @@ IMessagingReader *RTITSSImpl<Type, TypedTS, TypedCB>::CreateReader(const char *t
 template <class Type, class TypedTS, class TypedCB>
 unsigned long RTITSSImpl<Type, TypedTS, TypedCB>::GetInitializationSampleCount()
 {
-    return 0; // TODO: Implement
+    return _pm->get<unsigned long>("sendQueueSize");
 }
 
 template <>

@@ -20,6 +20,7 @@ resource_folder="${script_location}/resource"
 
 # By default we will not build TSS with Pro libs
 BUILD_TSS=0
+FACE_COMPLIANCE="None"
 
 # By default we will build pro, not micro
 BUILD_MICRO=0
@@ -1320,6 +1321,10 @@ while [ "$1" != "" ]; do
             ;;
         --tss)
             BUILD_TSS=1
+            ;;
+        --face-profile)
+            FACE_COMPLIANCE=$2
+            shift
             ;;
         --micro)
             BUILD_MICRO=1

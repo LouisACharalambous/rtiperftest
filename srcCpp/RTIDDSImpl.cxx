@@ -3390,6 +3390,7 @@ bool RTIDDSImpl<T>::setup_DW_QoS(
                         dw_qos.protocol.rtps_reliable_writer.max_send_window_size)
                     << "\n";
 
+  #ifdef RTI_FLATDATA_AVAILABLE
         // writer_loaned_sample_allocation
         if (_isFlatData) {
             stringStream << "\twriter_loaned_sample_allocation (initial_count/max_count): "
@@ -3405,13 +3406,13 @@ bool RTIDDSImpl<T>::setup_DW_QoS(
                             _isFlatData ? DDS_LENGTH_UNLIMITED : _PM->get<int>("unbounded"))
                         << "\n";
         }
+#endif // RTI_FLATDATA_AVAILABLE
 
         // Heartbeats per max samples
         stringStream << "\tHeartbeats per max samples: "
                     << stringValueQoS(
                         dw_qos.protocol.rtps_reliable_writer.heartbeats_per_max_samples)
                     << "\n";
-        
 
     #endif
         fprintf(stderr, "%s\n", stringStream.str().c_str());

@@ -11,7 +11,7 @@ This file was generated from perftest.idl using "rtiddsgen FACE TSS version".
 
 #include "util/rti_tss_common.h"
 
-#ifdef RTI_CONNEXT_MICRO
+#ifdef RTI_PERF_MICRO
 #include "rti_me_c.h"
 #include "disc_dpde/disc_dpde_discovery_plugin.h"
 #include "wh_sm/wh_sm_history.h"
@@ -21,15 +21,21 @@ This file was generated from perftest.idl using "rtiddsgen FACE TSS version".
 
 #include "log/ext_log.h"
 
+#include "ParameterManager.h"
+#include "perftest.h"
+
+extern "C" {
+
+struct RTI_TSS_QoS_Context {
+    ParameterManager *pm;
+    std::string topic;
+};
+
 /* function for customizing domain participant qos */
 DDS_Boolean
-FACE_DM_TestData_t_participant_qos(
-    struct DDS_DomainParticipantQos* dp_qos,
-    void* plugin_data)
+RTI_TSS_participant_qos(struct DDS_DomainParticipantQos *dp_qos, void *data)
 {
-    /* the argument qos structure will already contain the QoS values loaded from the
-    * profile "HelloWorld_Library::HelloWorld_Profile"
-    */
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
 
     /* Discovery announcements to loopback and Connext default multicast */
     DDS_StringSeq_set_maximum(&(dp_qos->discovery.initial_peers),2);
@@ -222,10 +228,10 @@ FACE_DM_TestData_t_participant_qos(
 
 /* function for customizing publisher qos */
 DDS_Boolean
-FACE_DM_TestData_t_publisher_qos(
-    struct DDS_PublisherQos* pub_qos,
-    void* plugin_data)
+RTI_TSS_publisher_qos(struct DDS_PublisherQos *pub_qos, void *data)
 {
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
+
     #ifndef RTI_CONNEXT_MICRO
     /* For Connext Pro
     * the argument qos structure will already contain the QoS values loaded from the
@@ -267,10 +273,10 @@ FACE_DM_TestData_t_publisher_qos(
 
 /* function for customizing subscriber qos */
 DDS_Boolean
-FACE_DM_TestData_t_subscriber_qos(
-    struct DDS_SubscriberQos* sub_qos,
-    void* plugin_data)
+RTI_TSS_subscriber_qos(struct DDS_SubscriberQos *sub_qos, void *data)
 {
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
+
     #ifndef RTI_CONNEXT_MICRO
     /* For Connext Pro
     * the argument qos structure will already contain the QoS values loaded from the
@@ -309,10 +315,10 @@ FACE_DM_TestData_t_subscriber_qos(
 
 /* function for customizing topic qos */
 DDS_Boolean
-FACE_DM_TestData_t_topic_qos(
-    struct DDS_TopicQos* topic_qos,
-    void* plugin_data)
+RTI_TSS_topic_qos(struct DDS_TopicQos *topic_qos, void *data)
 {
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
+
     /* For Connext Pro
     * the argument qos structure will already contain the QoS values loaded from the
     * profile "HelloWorld_Library::HelloWorld_Profile"
@@ -325,49 +331,136 @@ FACE_DM_TestData_t_topic_qos(
 
 /* function for customizing data writer qos */
 DDS_Boolean
-FACE_DM_TestData_t_datawriter_qos(
-    struct DDS_DataWriterQos* writer_qos,
-    void* plugin_data)
+RTI_TSS_datawriter_qos(struct DDS_DataWriterQos *writer_qos, void *data)
 {
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
 
-    /* For Connext Pro
-    * the argument qos structure will already contain the QoS values loaded from the
-    * profile "HelloWorld_Library::HelloWorld_Profile"
-    */
+    if (ctx->topic != ANNOUNCEMENT_TOPIC_NAME) {
+        if (ctx->pm->get<bool>("bestEffort")) {
+            writer_qos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+        } else {
+            // default: use the setting specified in the qos profile
+#ifdef RTI_PERF_MICRO
+            writer_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+#endif
+        }
+    } else {
+        writer_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+        writer_qos->durability.kind = DDS_TRANSIENT_LOCAL_DURABILITY_QOS;
+    }
 
-    #ifdef RTI_CONNEXT_MICRO
-    /* set qos for best effort communication without keys
-    writer_qos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
-    writer_qos->resource_limits.max_samples = 1;
-    writer_qos->resource_limits.max_samples_per_instance = 1;
-    writer_qos->resource_limits.max_instances = 1;
-    writer_qos->history.depth = 1; */
-    /* use these instead if reliable (also without keys) */
-    writer_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-    writer_qos->resource_limits.max_samples_per_instance = 200;
-    writer_qos->resource_limits.max_instances = 20;
-    writer_qos->resource_limits.max_samples =
-    writer_qos->resource_limits.max_instances *
-    writer_qos->resource_limits.max_samples_per_instance;
-    writer_qos->history.depth = 32;
-    writer_qos->protocol.rtps_reliable_writer.heartbeat_period.sec = 0;
-    writer_qos->protocol.rtps_reliable_writer.heartbeat_period.nanosec = 250000000;
-    #endif
+    if (ctx->topic == THROUGHPUT_TOPIC_NAME) {
+        writer_qos->resource_limits.max_instances = 1;
+        writer_qos->resource_limits.max_samples = ctx->pm->get<int>("sendQueueSize");
+        writer_qos->resource_limits.max_samples_per_instance =
+                writer_qos->resource_limits.max_samples;
+
+#ifdef RTI_PERF_PRO
+        writer_qos->resource_limits.initial_samples =
+                writer_qos->resource_limits.max_samples;
+        writer_qos->resource_limits.initial_instances =
+                writer_qos->resource_limits.max_instances;
+#endif // RTI_PERF_PRO
+
+        writer_qos->durability.kind =
+                (DDS_DurabilityQosPolicyKind) ctx->pm->get<int>("durability");
+
+        if (ctx->pm->get<unsigned long long>("dataLen") > 65536) {
+            writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
+                ctx->pm->get<int>("sendQueueSize");
+        } else {
+            writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
+                ctx->pm->get<int>("sendQueueSize") / 10;
+        }
+
+#ifdef RTI_PERF_PRO
+        writer_qos->protocol.rtps_reliable_writer.low_watermark =
+                ctx->pm->get<int>("sendQueueSize") * 1 / 10;
+        writer_qos->protocol.rtps_reliable_writer.high_watermark =
+                ctx->pm->get<int>("sendQueueSize") * 9 / 10;
+
+        /*
+         * If _SendQueueSize is 1 low watermark and high watermark would both be
+         * 0, which would cause the middleware to fail. So instead we set the
+         * high watermark to the low watermark + 1 in such case.
+         */
+        if (writer_qos->protocol.rtps_reliable_writer.high_watermark
+                == writer_qos->protocol.rtps_reliable_writer.low_watermark) {
+            writer_qos->protocol.rtps_reliable_writer.high_watermark++;
+        }
+
+        writer_qos->protocol.rtps_reliable_writer.max_send_window_size =
+                ctx->pm->get<int>("sendQueueSize");
+        writer_qos->protocol.rtps_reliable_writer.min_send_window_size =
+                ctx->pm->get<int>("sendQueueSize");
+#else
+#if RTI_PERF_MICRO_24x_COMPATIBILITY
+          writer_qos->history.kind = DDS_KEEP_LAST_HISTORY_QOS;
+#else
+          writer_qos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
+#endif // RTI_PERF_MICRO_24x_COMPATIBILITY
+
+        writer_qos->history.depth = ctx->pm->get<int>("sendQueueSize");
+
+        // Same values we use for Pro (See perftest_qos_profiles.xml).
+        writer_qos->protocol.rtps_reliable_writer.heartbeat_period.sec = 0;
+        writer_qos->protocol.rtps_reliable_writer.heartbeat_period.nanosec = 10000000;
+#endif // RTI_PERF_PRO
+    }
+
+    if (ctx->topic == LATENCY_TOPIC_NAME) {
+        writer_qos->durability.kind =
+                (DDS_DurabilityQosPolicyKind) ctx->pm->get<int>("durability");
+#ifdef RTI_PERF_PRO
+        writer_qos->durability.direct_communication =
+                !ctx->pm->get<bool>("noDirectCommunication");
+#endif // RTI_PERF_PRO
+
+        if (ctx->pm->get<unsigned long long>("dataLen") > 65536) {
+            writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
+                ctx->pm->get<int>("sendQueueSize");
+        } else {
+            writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
+                ctx->pm->get<int>("sendQueueSize") / 10;
+
+        }
+
+#ifdef RTI_PERF_PRO
+        if (ctx->pm->is_set("sendQueueSize")) {
+            writer_qos->protocol.rtps_reliable_writer.max_send_window_size =
+                    ctx->pm->get<int>("sendQueueSize");
+            writer_qos->protocol.rtps_reliable_writer.min_send_window_size =
+                    ctx->pm->get<int>("sendQueueSize");
+        }
+#endif // RTI_PERF_PRO
+    }
 
     return DDS_BOOLEAN_TRUE;
 }
 
 /* function for customizing data reader qos */
 DDS_Boolean
-FACE_DM_TestData_t_datareader_qos(
-    struct DDS_DataReaderQos* reader_qos,
-    void* plugin_data)
+RTI_TSS_datareader_qos(struct DDS_DataReaderQos *reader_qos, void *data)
 {
-    /* For Connext Pro
-    * the argument qos structure will already contain the QoS values loaded from the
-    * profile "HelloWorld_Library::HelloWorld_Profile"
-    */
-    #ifdef RTI_CONNEXT_MICRO
+    struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
+
+    // Only force reliability on throughput/latency topics
+    if (ctx->topic != ANNOUNCEMENT_TOPIC_NAME) {
+        if (!ctx->pm->get<bool>("bestEffort")) {
+            reader_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+        } else {
+            reader_qos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+        }
+    }
+
+#ifdef RTI_PERF_PRO
+    if (ctx->pm->is_set("receiveQueueSize")) {
+        reader_qos->resource_limits.initial_samples = ctx->pm->get<int>("receiveQueueSize");
+    }
+#endif // RTI_PERF_PRO
+
+#ifdef RTI_CONNEXT_MICRO
+    // TODO: Change this according to PM
     /* set qos for best effort communication without keys */
     reader_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     reader_qos->resource_limits.max_instances = 20;
@@ -380,104 +473,89 @@ FACE_DM_TestData_t_datareader_qos(
     /* if there are more remote writers, increase these limits */
     reader_qos->reader_resource_limits.max_remote_writers = 30;
     reader_qos->reader_resource_limits.max_remote_writers_per_instance = 30;
-    #endif
+#endif //RTI_CONNEXT_MICRO
 
     return DDS_BOOLEAN_TRUE;
 }
 
+void
+RTI_TSS_set_qos_plugin(const char *library, const char *profile,
+                       RTI_TSS_QoSConfigPlugin *plugin,
+                       struct RTI_TSS_QoS_Context *ctx)
+{
+    memset(plugin, 0, sizeof(*plugin));
+
+    plugin->qos_library = library;
+    plugin->qos_profile = profile;
+
+    plugin->plugin_data = (void*) ctx;
+    plugin->configure_domain_participant_qos_fnc = RTI_TSS_participant_qos;
+    plugin->configure_publisher_qos_fnc = RTI_TSS_publisher_qos;
+    plugin->configure_subscriber_qos_fnc = RTI_TSS_subscriber_qos;
+    plugin->configure_topic_qos_fnc = RTI_TSS_topic_qos;
+    plugin->configure_datawriter_qos_fnc = RTI_TSS_datawriter_qos;
+    plugin->configure_datareader_qos_fnc = RTI_TSS_datareader_qos;
+}
+
 /* function to return the plugin with references to the above functions */
 struct RTI_TSS_QoSConfigPlugin*
-FACE_DM_TestData_t_get_qos_throughput()
+RTI_TSS_get_qos_throughput(ParameterManager *pm)
 {
-    static RTI_TSS_QoSConfigPlugin* QoS_plugin_g = NULL;
+    static RTI_TSS_QoSConfigPlugin* throughput_plugin_g = NULL;
+    static struct RTI_TSS_QoS_Context *throughput_ctx_g = NULL;
 
-    if (QoS_plugin_g == NULL)
-    {
-        QoS_plugin_g = (RTI_TSS_QoSConfigPlugin*)malloc(sizeof(*QoS_plugin_g));
+    if (throughput_plugin_g == NULL) {
+        throughput_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*throughput_plugin_g));
+        throughput_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*throughput_ctx_g));
 
-        memset(QoS_plugin_g, 0, sizeof(*QoS_plugin_g));
+        throughput_ctx_g->pm = pm;
+        throughput_ctx_g->topic = THROUGHPUT_TOPIC_NAME;
 
-        QoS_plugin_g->configure_domain_participant_qos_fnc =
-                FACE_DM_TestData_t_participant_qos;
-        QoS_plugin_g->configure_publisher_qos_fnc =
-                FACE_DM_TestData_t_publisher_qos;
-        QoS_plugin_g->configure_subscriber_qos_fnc =
-                FACE_DM_TestData_t_subscriber_qos;
-        QoS_plugin_g->configure_topic_qos_fnc =
-                FACE_DM_TestData_t_topic_qos;
-        QoS_plugin_g->configure_datawriter_qos_fnc =
-                FACE_DM_TestData_t_datawriter_qos;
-        QoS_plugin_g->configure_datareader_qos_fnc =
-                FACE_DM_TestData_t_datareader_qos;
-
-        QoS_plugin_g->qos_library = "PerftestQosLibrary";
-        QoS_plugin_g->qos_profile = "ThroughputQos";
-        QoS_plugin_g->plugin_data = NULL;
+        RTI_TSS_set_qos_plugin("PerftestQosLibrary", "ThroughputQos",
+                               throughput_plugin_g, throughput_ctx_g);
     }
 
-    return QoS_plugin_g;
+    return throughput_plugin_g;
 }
 
 struct RTI_TSS_QoSConfigPlugin*
-FACE_DM_TestData_t_get_qos_latency()
+RTI_TSS_get_qos_latency(ParameterManager *pm)
 {
-    static RTI_TSS_QoSConfigPlugin* QoS_plugin_g = NULL;
+    static RTI_TSS_QoSConfigPlugin* latency_plugin_g = NULL;
+    static struct RTI_TSS_QoS_Context *latency_ctx_g = NULL;
 
-    if (QoS_plugin_g == NULL)
-    {
-        QoS_plugin_g = (RTI_TSS_QoSConfigPlugin*)malloc(sizeof(*QoS_plugin_g));
+    if (latency_plugin_g == NULL) {
+        latency_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*latency_plugin_g));
+        latency_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*latency_ctx_g));
 
-        memset(QoS_plugin_g, 0, sizeof(*QoS_plugin_g));
+        latency_ctx_g->pm = pm;
+        latency_ctx_g->topic = LATENCY_TOPIC_NAME;
 
-        QoS_plugin_g->configure_domain_participant_qos_fnc =
-                FACE_DM_TestData_t_participant_qos;
-        QoS_plugin_g->configure_publisher_qos_fnc =
-                FACE_DM_TestData_t_publisher_qos;
-        QoS_plugin_g->configure_subscriber_qos_fnc =
-                FACE_DM_TestData_t_subscriber_qos;
-        QoS_plugin_g->configure_topic_qos_fnc =
-                FACE_DM_TestData_t_topic_qos;
-        QoS_plugin_g->configure_datawriter_qos_fnc =
-                FACE_DM_TestData_t_datawriter_qos;
-        QoS_plugin_g->configure_datareader_qos_fnc =
-                FACE_DM_TestData_t_datareader_qos;
-
-        QoS_plugin_g->qos_library = "PerftestQosLibrary";
-        QoS_plugin_g->qos_profile = "LatencyQos";
-        QoS_plugin_g->plugin_data = NULL;
+        RTI_TSS_set_qos_plugin("PerftestQosLibrary", "LatencyQos",
+                               latency_plugin_g, latency_ctx_g);
     }
 
-    return QoS_plugin_g;
+    return latency_plugin_g;
 }
 
 struct RTI_TSS_QoSConfigPlugin*
-FACE_DM_TestData_t_get_qos_announcement()
+RTI_TSS_get_qos_announcement(ParameterManager *pm)
 {
-    static RTI_TSS_QoSConfigPlugin* QoS_plugin_g = NULL;
+    static RTI_TSS_QoSConfigPlugin* announcement_plugin_g = NULL;
+    static struct RTI_TSS_QoS_Context *announcement_ctx_g = NULL;
 
-    if (QoS_plugin_g == NULL)
-    {
-        QoS_plugin_g = (RTI_TSS_QoSConfigPlugin*)malloc(sizeof(*QoS_plugin_g));
+    if (announcement_plugin_g == NULL) {
+        announcement_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*announcement_plugin_g));
+        announcement_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*announcement_ctx_g));
 
-        memset(QoS_plugin_g, 0, sizeof(*QoS_plugin_g));
+        announcement_ctx_g->pm = pm;
+        announcement_ctx_g->topic = ANNOUNCEMENT_TOPIC_NAME;
 
-        QoS_plugin_g->configure_domain_participant_qos_fnc =
-                FACE_DM_TestData_t_participant_qos;
-        QoS_plugin_g->configure_publisher_qos_fnc =
-                FACE_DM_TestData_t_publisher_qos;
-        QoS_plugin_g->configure_subscriber_qos_fnc =
-                FACE_DM_TestData_t_subscriber_qos;
-        QoS_plugin_g->configure_topic_qos_fnc =
-                FACE_DM_TestData_t_topic_qos;
-        QoS_plugin_g->configure_datawriter_qos_fnc =
-                FACE_DM_TestData_t_datawriter_qos;
-        QoS_plugin_g->configure_datareader_qos_fnc =
-                FACE_DM_TestData_t_datareader_qos;
-
-        QoS_plugin_g->qos_library = "PerftestQosLibrary";
-        QoS_plugin_g->qos_profile = "AnnouncementQos";
-        QoS_plugin_g->plugin_data = NULL;
+        RTI_TSS_set_qos_plugin("PerftestQosLibrary", "AnnouncementQos",
+                               announcement_plugin_g, announcement_ctx_g);
     }
 
-    return QoS_plugin_g;
+    return announcement_plugin_g;
 }
+
+} // Extern C

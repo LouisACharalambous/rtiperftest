@@ -13,38 +13,47 @@ This file was generated from perftest.idl using "rtiddsgen FACE TSS version".
 #include "util/rti_tss_common.h"
 #include "perftest.h"
 
+#include "ParameterManager.h"
+
 /* include RTI TSS header file for configuration data */
 #include "config/ext_config.h"
 
 /* include RTI TSS header file for logging configuration */
 #include "log/ext_log.h"
 
-extern struct RTI_TSS_QoSConfigPlugin* FACE_DM_TestData_t_get_qos_announcement(void);
-extern struct RTI_TSS_QoSConfigPlugin* FACE_DM_TestData_t_get_qos_throughput(void);
-extern struct RTI_TSS_QoSConfigPlugin* FACE_DM_TestData_t_get_qos_latency(void);
+extern "C" {
 
-void RTI_TSS_ConfigData_get_config(
-        const char* role, const char* topic, RTI_TSS_ExternalConfigDataElement* config)
+extern struct RTI_TSS_QoSConfigPlugin* RTI_TSS_get_qos_announcement(ParameterManager *);
+extern struct RTI_TSS_QoSConfigPlugin* RTI_TSS_get_qos_throughput(ParameterManager *);
+extern struct RTI_TSS_QoSConfigPlugin* RTI_TSS_get_qos_latency(ParameterManager *);
+
+/* No context can be passed to RTI_TSS_ConfigData_get_config_data, therefore,
+ * we need to pass the PM setting this global variable at RTITSSImpl::Initialize
+ */
+ParameterManager *RTI_TSS_gv_pm = NULL;
+
+void RTI_TSS_ConfigData_get_config(const char* role, const char* topic,
+                                   RTI_TSS_ExternalConfigDataElement* config)
 {
     char conn_name[64];
     sprintf(conn_name, "%s %s", role, topic);
 
-    config->domain = 0;
+    config->domain = RTI_TSS_gv_pm->get<int>("domain");
     config->topic_name = topic;
     config->type_name = "FACE::DM::TestData_t";
     config->connection_name = DDS_String_dup(conn_name);
 
     if (strcmp(topic, THROUGHPUT_TOPIC_NAME) == 0)
     {
-        config->qos_plugin = FACE_DM_TestData_t_get_qos_throughput();
+        config->qos_plugin = RTI_TSS_get_qos_throughput(RTI_TSS_gv_pm);
     }
     else if (strcmp(topic, LATENCY_TOPIC_NAME) == 0)
     {
-       config->qos_plugin = FACE_DM_TestData_t_get_qos_latency();
+       config->qos_plugin = RTI_TSS_get_qos_latency(RTI_TSS_gv_pm);
     }
     else if (strcmp(topic, ANNOUNCEMENT_TOPIC_NAME) == 0)
     {
-       config->qos_plugin = FACE_DM_TestData_t_get_qos_announcement();
+       config->qos_plugin = RTI_TSS_get_qos_announcement(RTI_TSS_gv_pm);
     }
     else
     {
@@ -65,9 +74,9 @@ void RTI_TSS_ConfigData_get_config(
     else
     {
         config->direction_type = FACE_BI_DIRECTIONAL;
-        #ifndef RTI_CONNEXT_MICRO
+#ifndef RTI_CONNEXT_MICRO
         config->bi_dir_ignore_self = 1;
-        #endif
+#endif
     }
 }
 
@@ -80,16 +89,14 @@ void RTI_TSS_ConfigData_get_config(
 RTI_TSS_ExternalConfigData*
 RTI_TSS_ConfigData_get_config_data(const char *config_name)
 {
-    static RTI_TSS_ExternalConfigData* config_data_g = 0;
+    RTI_TSS_ExternalConfigData* config_data_g = NULL;
 
-    #if !FACE_COMPLIANCE_LEVEL_SAFETY_BASE_OR_STRICTER
-    struct Logger* logger = Logger_getInstance();
+    if (RTI_TSS_gv_pm == NULL) {
+        fprintf(stderr, "RTI_TSS_gv_pm was not set\n");
+        return NULL;
+    }
 
-    Logger_info(logger, __func__,
-                "perftest providing configuration data to RTI TSS\n");
-    #endif
-
-    if (config_data_g == 0)
+    if (config_data_g == NULL)
     {
         config_data_g = (RTI_TSS_ExternalConfigData*) malloc(sizeof(*config_data_g));
         memset(config_data_g, 0, sizeof(*config_data_g));
@@ -119,3 +126,5 @@ RTI_TSS_ConfigData_get_config_data(const char *config_name)
 
     return config_data_g;
 }
+
+} // Extern C

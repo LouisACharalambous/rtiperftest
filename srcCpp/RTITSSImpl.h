@@ -63,6 +63,7 @@ class RTITSSImpl : public IMessaging
     std::vector<FACE::TSS::CONNECTION_ID_TYPE> _connections;
     RTI::TSS::Base *_tss;
     PerftestSemaphore *_pong_semaphore;
+    ParameterManager *_pm;
 
     FACE::TSS::CONNECTION_ID_TYPE _createConnection(
             std::string name, FACE::RETURN_CODE_TYPE::Value &retcode);
