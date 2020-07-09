@@ -14,30 +14,26 @@
 
 /* Pointer to PM used by RTI_TSS_ConfigData_get_config_data */
 extern ParameterManager *RTI_TSS_gv_pm;
+extern PerftestTransport *RTI_TSS_gv_transport;
 
 /* RTITSSImpl implementation */
-template <class Type, class TypedTS, class TypedCB>
-RTITSSImpl<Type, TypedTS, TypedCB>::RTITSSImpl()
-{
-    _tss = new RTI::TSS::Base;
-    _pong_semaphore = NULL;
-    _pm = NULL;
-}
-
-template <class Type, class TypedTS, class TypedCB>
-RTITSSImpl<Type, TypedTS, TypedCB>::~RTITSSImpl()
-{
-    delete _tss;
-}
-
 template <class Type, class TypedTS, class TypedCB>
 bool RTITSSImpl<Type, TypedTS, TypedCB>::Initialize(ParameterManager &PM, perftest_cpp *parent)
 {
     FACE::RETURN_CODE_TYPE::Value retcode;
 
-    /* Set reference for PM to be used at RTI_TSS_ConfigData_get_config_data */
-    RTI_TSS_gv_pm = &PM;
     _pm = &PM;
+    _transport.initialize(_pm);
+    if (!_transport.validate_input()) {
+        fprintf(stderr, "Failed to validate transport\n");
+		return false;
+    }
+
+    /* Set reference for PM and transport to be used at
+     * RTI_TSS_ConfigData_get_config_data
+     */
+    RTI_TSS_gv_pm = _pm;
+    RTI_TSS_gv_transport = &_transport;
 
     _tss->Initialize("RTI_TSS_STATIC_INITIALIZATION##perftest", retcode);
     if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
@@ -63,8 +59,7 @@ void RTITSSImpl<Type, TypedTS, TypedCB>::Shutdown()
 
     for (int i = 0; i < _connections.size(); ++i) {
         _tss->Destroy_Connection(_connections[i], retcode);
-        if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-	    {
+        if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
 		    fprintf(stderr, "Failed destroy connection (rc=%d)\n", retcode);
 	    }
     }
@@ -79,6 +74,8 @@ template <class Type, class TypedTS, class TypedCB>
 std::string RTITSSImpl<Type, TypedTS, TypedCB>::PrintConfiguration()
 {
     std::ostringstream stringStream;
+
+    stringStream << std::endl << "TSS Configuration:" << std::endl;
 
     stringStream << "\tDomain: " << _pm->get<int>("domain") << std::endl;
 
@@ -99,6 +96,10 @@ std::string RTITSSImpl<Type, TypedTS, TypedCB>::PrintConfiguration()
 #endif
 
     stringStream << std::endl;
+
+    stringStream << "XML File:" << _pm->get<std::string>("qosFile") << std::endl;
+
+    stringStream << std::endl << _transport.printTransportConfigurationSummary();
 
     return stringStream.str();
 }
@@ -431,15 +432,13 @@ TSSConnection<Type, TypedTS, TypedCB>::TSSConnection(
 
     connection_entry = RTI_TSS_ConnectionManager_lookup_connection_id(
             rti_tss->connection_mgr, _connection_id);
-    if (connection_entry == NULL)
-    {
+    if (connection_entry == NULL) {
         fprintf(stderr, "Failed to get connection entry.\n");
         return;
     }
 
     participant = RTI_TSS_ConnectionEntry_get_participant(connection_entry);
-    if (participant == NULL)
-    {
+    if (participant == NULL) {
         fprintf(stderr, "Failed to get participant from connection.\n");
         return;
     }
@@ -473,8 +472,7 @@ TSSConnection<Type, TypedTS, TypedCB>::TSSConnection(
     if (callback != NULL) {
         _typedCB = new TSSListener<Type, TypedCB>(callback);
         _typedTS->Register_Callback(_connection_id, *_typedCB, retcode);
-        if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-        {
+        if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
             printf("Failed Register_Callback (rc=%d)\n", retcode);
             return;
         }
@@ -485,7 +483,7 @@ template <class Type, class TypedTS, class TypedCB>
 TSSConnection<Type, TypedTS, TypedCB>::~TSSConnection()
 {
     if (_typedTS != NULL) delete _typedTS;
-    //if (_typedCB != NULL) delete _typedCB;
+    if (_typedCB != NULL) delete _typedCB;
 }
 
 template <class Type, class TypedTS, class TypedCB>
@@ -494,6 +492,11 @@ inline bool TSSConnection<Type, TypedTS, TypedCB>::_send(const TestMessage &mess
     FACE::RETURN_CODE_TYPE::Value retcode;
     FACE::TSS::TRANSACTION_ID_TYPE transaction_id(0);
     FACE::TIMEOUT_TYPE timeout(0);
+    int key = MAX_CFT_VALUE;
+
+    for (int c = 0; c < KEY_SIZE; ++c) {
+        _sample.key[c] = (unsigned char)(key >> c * 8);
+    }
 
     _sample.entity_id = message.entity_id;
     _sample.seq_num = message.seq_num;
@@ -520,14 +523,9 @@ inline bool TSSConnection<Type, TypedTS, TypedCB>::_send(const TestMessage &mess
 
     _typedTS->Send_Message(_connection_id,
                            timeout,
-                           transaction_id,
+                           transaction_id, /* not used */
                            _sample,
                            retcode);
-    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-	{
-		fprintf(stderr, "Failed Send_Message (rc=%d)\n", retcode);
-        return false;
-	}
 
 #ifdef RTI_PERF_PRO
     if (!DDS_OctetSeq_unloan(&_sample.bin_data)) {
@@ -540,6 +538,11 @@ inline bool TSSConnection<Type, TypedTS, TypedCB>::_send(const TestMessage &mess
         return false;
     }
 #endif // RTI_PERF_PRO
+
+    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
+		fprintf(stderr, "Failed Send_Message (rc=%d)\n", retcode);
+        return false;
+	}
 
     return true;
 }
@@ -560,11 +563,9 @@ inline TestMessage *TSSConnection<Type, TypedTS, TypedCB>::_receive()
                               header, /* not used */
                               qos_parameters, /* not used */
                               retcode);
-    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR)
-	{
-        if (retcode != FACE::RETURN_CODE_TYPE::NOT_AVAILABLE)
-            fprintf(stderr, "!Failed Receive_Message (rc=%d)\n", retcode);
-
+    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR &&
+            retcode != FACE::RETURN_CODE_TYPE::NOT_AVAILABLE) {
+        fprintf(stderr, "!Failed Receive_Message (rc=%d)\n", retcode);
         return NULL;
 	}
 

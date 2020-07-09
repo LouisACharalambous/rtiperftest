@@ -21,13 +21,22 @@ This file was generated from perftest.idl using "rtiddsgen FACE TSS version".
 
 #include "log/ext_log.h"
 
+#include "Infrastructure_common.h"
 #include "ParameterManager.h"
 #include "perftest.h"
 
 extern "C" {
 
+/* No context can be passed to RTI_TSS_ConfigData_get_config_data, therefore,
+ * we need to pass the PM and trsnport setting this global variable at
+ * RTITSSImpl::Initialize
+ */
+ParameterManager *RTI_TSS_gv_pm = NULL;
+PerftestTransport *RTI_TSS_gv_transport = NULL;
+
 struct RTI_TSS_QoS_Context {
     ParameterManager *pm;
+    PerftestTransport *transport;
     std::string topic;
 };
 
@@ -50,6 +59,10 @@ RTI_TSS_participant_qos(struct DDS_DomainParticipantQos *dp_qos, void *data)
     /* disable shared memory for Connext Pro */
     dp_qos->transport_builtin.mask = DDS_TRANSPORTBUILTIN_UDPv4;
     #endif
+
+    if (!PerftestConfigureTransport(*ctx->transport, *dp_qos, ctx->pm)) {
+        return false;
+    }
 
     #ifdef RTI_CONNEXT_MICRO
     RT_Registry_T *registry = NULL;
@@ -499,16 +512,17 @@ RTI_TSS_set_qos_plugin(const char *library, const char *profile,
 
 /* function to return the plugin with references to the above functions */
 struct RTI_TSS_QoSConfigPlugin*
-RTI_TSS_get_qos_throughput(ParameterManager *pm)
+RTI_TSS_get_qos_throughput()
 {
     static RTI_TSS_QoSConfigPlugin* throughput_plugin_g = NULL;
     static struct RTI_TSS_QoS_Context *throughput_ctx_g = NULL;
 
     if (throughput_plugin_g == NULL) {
-        throughput_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*throughput_plugin_g));
-        throughput_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*throughput_ctx_g));
+        throughput_plugin_g = new RTI_TSS_QoSConfigPlugin;
+        throughput_ctx_g = new struct RTI_TSS_QoS_Context;
 
-        throughput_ctx_g->pm = pm;
+        throughput_ctx_g->pm = RTI_TSS_gv_pm;
+        throughput_ctx_g->transport = RTI_TSS_gv_transport;
         throughput_ctx_g->topic = THROUGHPUT_TOPIC_NAME;
 
         RTI_TSS_set_qos_plugin("PerftestQosLibrary", "ThroughputQos",
@@ -519,16 +533,17 @@ RTI_TSS_get_qos_throughput(ParameterManager *pm)
 }
 
 struct RTI_TSS_QoSConfigPlugin*
-RTI_TSS_get_qos_latency(ParameterManager *pm)
+RTI_TSS_get_qos_latency()
 {
     static RTI_TSS_QoSConfigPlugin* latency_plugin_g = NULL;
     static struct RTI_TSS_QoS_Context *latency_ctx_g = NULL;
 
     if (latency_plugin_g == NULL) {
-        latency_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*latency_plugin_g));
-        latency_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*latency_ctx_g));
+        latency_plugin_g = new RTI_TSS_QoSConfigPlugin;
+        latency_ctx_g = new struct RTI_TSS_QoS_Context;
 
-        latency_ctx_g->pm = pm;
+        latency_ctx_g->pm = RTI_TSS_gv_pm;
+        latency_ctx_g->transport = RTI_TSS_gv_transport;
         latency_ctx_g->topic = LATENCY_TOPIC_NAME;
 
         RTI_TSS_set_qos_plugin("PerftestQosLibrary", "LatencyQos",
@@ -539,16 +554,17 @@ RTI_TSS_get_qos_latency(ParameterManager *pm)
 }
 
 struct RTI_TSS_QoSConfigPlugin*
-RTI_TSS_get_qos_announcement(ParameterManager *pm)
+RTI_TSS_get_qos_announcement()
 {
     static RTI_TSS_QoSConfigPlugin* announcement_plugin_g = NULL;
     static struct RTI_TSS_QoS_Context *announcement_ctx_g = NULL;
 
     if (announcement_plugin_g == NULL) {
-        announcement_plugin_g = (RTI_TSS_QoSConfigPlugin*) malloc(sizeof(*announcement_plugin_g));
-        announcement_ctx_g = (struct RTI_TSS_QoS_Context *) malloc(sizeof(*announcement_ctx_g));
+        announcement_plugin_g = new RTI_TSS_QoSConfigPlugin;
+        announcement_ctx_g = new struct RTI_TSS_QoS_Context;
 
-        announcement_ctx_g->pm = pm;
+        announcement_ctx_g->pm = RTI_TSS_gv_pm;
+        announcement_ctx_g->transport = RTI_TSS_gv_transport;
         announcement_ctx_g->topic = ANNOUNCEMENT_TOPIC_NAME;
 
         RTI_TSS_set_qos_plugin("PerftestQosLibrary", "AnnouncementQos",

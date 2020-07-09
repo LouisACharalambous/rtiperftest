@@ -63,6 +63,7 @@ class RTITSSImpl : public IMessaging
     std::vector<FACE::TSS::CONNECTION_ID_TYPE> _connections;
     RTI::TSS::Base *_tss;
     PerftestSemaphore *_pong_semaphore;
+    PerftestTransport _transport;
     ParameterManager *_pm;
 
     FACE::TSS::CONNECTION_ID_TYPE _createConnection(
@@ -74,8 +75,10 @@ class RTITSSImpl : public IMessaging
     int _serializeTyped(Type *data, unsigned int &size);
 
 public:
-    RTITSSImpl();
-    ~RTITSSImpl();
+    RTITSSImpl() : _tss(new RTI::TSS::Base),
+                   _pong_semaphore(NULL),
+                   _pm(NULL) {}
+    ~RTITSSImpl() { delete _tss; };
 
     bool Initialize(ParameterManager &PM, perftest_cpp *parent);
     void Shutdown();

@@ -95,7 +95,7 @@ message(STATUS "[RTI] PLATFORM_ARCH ...................: ${PLATFORM_ARCH}")
 message(STATUS "[RTI] RTI_TSS_ENABLE_FACE_COMPLIANCE...: ${RTI_TSS_ENABLE_FACE_COMPLIANCE}")
 
 # static libs only
-if(CMAKE_BUILD_TYPE MATCHES "Release")
+if (CMAKE_BUILD_TYPE MATCHES "Release")
     set(LIB_SUFFIX "z.a")
 else()
     set(LIB_SUFFIX "zd.a")

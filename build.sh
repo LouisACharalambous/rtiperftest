@@ -955,6 +955,12 @@ function build_tss_cpp()
         TSS_IMPL="pro"
     fi
 
+    if [ "${RELEASE_DEBUG}" == "debug" ]; then
+        RELEASE_DEBUG="Debug"
+    else
+        RELEASE_DEBUG="Release"
+    fi
+
     additional_defines=${additional_defines}" DRTI_PERF_TSS"
 
     cp "${classic_cpp_folder}/perftest_publisher.cxx" \
@@ -972,7 +978,7 @@ function build_tss_cpp()
     echo -e "${INFO_TAG} Compiling perftest_cpp"
     cd "${classic_cpp_folder}"
 
-    cmake_generate_command="RTITSSARCH=${platform} ${CMAKE_EXE}\
+    cmake_generate_command="RTITSSARCH=${platform} ${CMAKE_EXE} \
                             -DRTI_CONNEXT_TYPE=${TSS_IMPL} \
                             -DRTI_TSS_ENABLE_FACE_COMPLIANCE=${FACE_COMPLIANCE} \
                             -DCMAKE_BUILD_TYPE=${RELEASE_DEBUG} \
