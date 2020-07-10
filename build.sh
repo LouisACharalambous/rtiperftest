@@ -955,12 +955,6 @@ function build_tss_cpp()
         TSS_IMPL="pro"
     fi
 
-    if [ "${RELEASE_DEBUG}" == "debug" ]; then
-        RELEASE_DEBUG="Debug"
-    else
-        RELEASE_DEBUG="Release"
-    fi
-
     additional_defines=${additional_defines}" DRTI_PERF_TSS"
 
     cp "${classic_cpp_folder}/perftest_publisher.cxx" \

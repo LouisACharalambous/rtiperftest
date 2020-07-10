@@ -19,7 +19,7 @@ endif()
 # -Dvar=value. These two variables must be before the project call since
 # toolchains need them.
 option(BUILD_SHARED_LIBS "Libraries type; TRUE for shared, FALSE for static" FALSE)
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type: 'Debug' or 'Release'")
+set(CMAKE_BUILD_TYPE "release" CACHE STRING "Build type: 'Debug' or 'Release'")
 
 set(RTI_CONNEXT_PRO_TYPE "pro")
 set(RTI_CONNEXT_MICRO_TYPE "micro")
@@ -95,7 +95,7 @@ message(STATUS "[RTI] PLATFORM_ARCH ...................: ${PLATFORM_ARCH}")
 message(STATUS "[RTI] RTI_TSS_ENABLE_FACE_COMPLIANCE...: ${RTI_TSS_ENABLE_FACE_COMPLIANCE}")
 
 # static libs only
-if (CMAKE_BUILD_TYPE MATCHES "Release")
+if (CMAKE_BUILD_TYPE MATCHES "release")
     set(LIB_SUFFIX "z.a")
 else()
     set(LIB_SUFFIX "zd.a")
