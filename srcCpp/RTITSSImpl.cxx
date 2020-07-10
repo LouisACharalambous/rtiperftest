@@ -97,7 +97,7 @@ std::string RTITSSImpl<Type, TypedTS, TypedCB>::PrintConfiguration()
 
     stringStream << std::endl;
 
-    stringStream << "XML File:" << _pm->get<std::string>("qosFile") << std::endl;
+    stringStream << "\tXML File: " << _pm->get<std::string>("qosFile") << std::endl;
 
     stringStream << std::endl << _transport.printTransportConfigurationSummary();
 
@@ -255,6 +255,20 @@ void RTITSSPublisher<Type, TypedTS, TypedCB>::WaitForReaders(int numSubscribers)
 
         PerftestClock::milliSleep(PERFTEST_DISCOVERY_TIME_MSEC);
     }
+}
+
+template <class Type, class TypedTS, class TypedCB>
+bool RTITSSPublisher<Type, TypedTS, TypedCB>::waitForPingResponse()
+{
+    if(_pong_semaphore != NULL) {
+        if (!PerftestSemaphore_take(
+                    _pong_semaphore, PERFTEST_SEMAPHORE_TIMEOUT_INFINITE)) {
+            fprintf(stderr, "Error taking semaphore\n");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 template <class Type, class TypedTS, class TypedCB>
@@ -563,9 +577,10 @@ inline TestMessage *TSSConnection<Type, TypedTS, TypedCB>::_receive()
                               header, /* not used */
                               qos_parameters, /* not used */
                               retcode);
-    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR &&
-            retcode != FACE::RETURN_CODE_TYPE::NOT_AVAILABLE) {
-        fprintf(stderr, "!Failed Receive_Message (rc=%d)\n", retcode);
+    if (retcode != FACE::RETURN_CODE_TYPE::NO_ERROR) {
+        if (retcode != FACE::RETURN_CODE_TYPE::NOT_AVAILABLE)
+            fprintf(stderr, "!Failed Receive_Message (rc=%d)\n", retcode);
+
         return NULL;
 	}
 

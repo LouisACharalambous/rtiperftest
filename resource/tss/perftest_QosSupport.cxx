@@ -55,7 +55,7 @@ RTI_TSS_participant_qos(struct DDS_DomainParticipantQos *dp_qos, void *data)
     *DDS_StringSeq_get_reference(&(dp_qos->discovery.initial_peers),1) =
     DDS_String_dup("239.255.0.1");
 
-    #ifndef RTI_CONNEXT_MICRO
+    #ifndef RTI_PERF_MICRO
     /* disable shared memory for Connext Pro */
     dp_qos->transport_builtin.mask = DDS_TRANSPORTBUILTIN_UDPv4;
     #endif
@@ -64,7 +64,7 @@ RTI_TSS_participant_qos(struct DDS_DomainParticipantQos *dp_qos, void *data)
         return false;
     }
 
-    #ifdef RTI_CONNEXT_MICRO
+    #ifdef RTI_PERF_MICRO
     RT_Registry_T *registry = NULL;
     struct UDP_InterfaceFactoryProperty *udp_property = NULL;
     struct DPDE_DiscoveryPluginProperty discovery_plugin_properties =
@@ -245,7 +245,7 @@ RTI_TSS_publisher_qos(struct DDS_PublisherQos *pub_qos, void *data)
 {
     struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
 
-    #ifndef RTI_CONNEXT_MICRO
+    #ifndef RTI_PERF_MICRO
     /* For Connext Pro
     * the argument qos structure will already contain the QoS values loaded from the
     * profile "HelloWorld_Library::HelloWorld_Profile"
@@ -290,7 +290,7 @@ RTI_TSS_subscriber_qos(struct DDS_SubscriberQos *sub_qos, void *data)
 {
     struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
 
-    #ifndef RTI_CONNEXT_MICRO
+    #ifndef RTI_PERF_MICRO
     /* For Connext Pro
     * the argument qos structure will already contain the QoS values loaded from the
     * profile "HelloWorld_Library::HelloWorld_Profile"
@@ -336,7 +336,7 @@ RTI_TSS_topic_qos(struct DDS_TopicQos *topic_qos, void *data)
     * the argument qos structure will already contain the QoS values loaded from the
     * profile "HelloWorld_Library::HelloWorld_Profile"
     */
-    #ifdef RTI_CONNEXT_MICRO
+    #ifdef RTI_PERF_MICRO
     DDS_TopicQos_initialize(topic_qos);
     #endif
     return DDS_BOOLEAN_TRUE;
@@ -358,8 +358,10 @@ RTI_TSS_datawriter_qos(struct DDS_DataWriterQos *writer_qos, void *data)
 #endif
         }
     } else {
+#ifdef RTI_PERF_MICRO
         writer_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
         writer_qos->durability.kind = DDS_TRANSIENT_LOCAL_DURABILITY_QOS;
+#endif
     }
 
     if (ctx->topic == THROUGHPUT_TOPIC_NAME) {
@@ -380,17 +382,17 @@ RTI_TSS_datawriter_qos(struct DDS_DataWriterQos *writer_qos, void *data)
 
         if (ctx->pm->get<unsigned long long>("dataLen") > 65536) {
             writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
-                ctx->pm->get<int>("sendQueueSize");
+                    writer_qos->resource_limits.max_samples;
         } else {
             writer_qos->protocol.rtps_reliable_writer.heartbeats_per_max_samples =
-                ctx->pm->get<int>("sendQueueSize") / 10;
+                    writer_qos->resource_limits.max_samples / 10;
         }
 
 #ifdef RTI_PERF_PRO
         writer_qos->protocol.rtps_reliable_writer.low_watermark =
-                ctx->pm->get<int>("sendQueueSize") * 1 / 10;
+                writer_qos->resource_limits.max_samples * 1 / 10;
         writer_qos->protocol.rtps_reliable_writer.high_watermark =
-                ctx->pm->get<int>("sendQueueSize") * 9 / 10;
+                writer_qos->resource_limits.max_samples * 9 / 10;
 
         /*
          * If _SendQueueSize is 1 low watermark and high watermark would both be
@@ -403,17 +405,17 @@ RTI_TSS_datawriter_qos(struct DDS_DataWriterQos *writer_qos, void *data)
         }
 
         writer_qos->protocol.rtps_reliable_writer.max_send_window_size =
-                ctx->pm->get<int>("sendQueueSize");
+                writer_qos->resource_limits.max_samples;
         writer_qos->protocol.rtps_reliable_writer.min_send_window_size =
-                ctx->pm->get<int>("sendQueueSize");
-#else
+                writer_qos->resource_limits.max_samples;
+#else // RTI_PERF_MICRO
 #if RTI_PERF_MICRO_24x_COMPATIBILITY
-          writer_qos->history.kind = DDS_KEEP_LAST_HISTORY_QOS;
+        writer_qos->history.kind = DDS_KEEP_LAST_HISTORY_QOS;
 #else
-          writer_qos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
+        writer_qos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
 #endif // RTI_PERF_MICRO_24x_COMPATIBILITY
 
-        writer_qos->history.depth = ctx->pm->get<int>("sendQueueSize");
+        writer_qos->history.depth = writer_qos->resource_limits.max_samples;
 
         // Same values we use for Pro (See perftest_qos_profiles.xml).
         writer_qos->protocol.rtps_reliable_writer.heartbeat_period.sec = 0;
@@ -457,12 +459,18 @@ RTI_TSS_datareader_qos(struct DDS_DataReaderQos *reader_qos, void *data)
 {
     struct RTI_TSS_QoS_Context *ctx = (struct RTI_TSS_QoS_Context*) data;
 
+    reader_qos->resource_limits.max_instances = 1;
+
+#ifdef RTI_PERF_PRO
+    reader_qos->resource_limits.initial_instances = 1;
+#endif // RTI_PERF_PRO
+
     // Only force reliability on throughput/latency topics
     if (ctx->topic != ANNOUNCEMENT_TOPIC_NAME) {
-        if (!ctx->pm->get<bool>("bestEffort")) {
-            reader_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
-        } else {
+        if (ctx->pm->get<bool>("bestEffort")) {
             reader_qos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+        } else {
+            reader_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
         }
     }
 
@@ -472,7 +480,7 @@ RTI_TSS_datareader_qos(struct DDS_DataReaderQos *reader_qos, void *data)
     }
 #endif // RTI_PERF_PRO
 
-#ifdef RTI_CONNEXT_MICRO
+#ifdef RTI_PERF_MICRO
     // TODO: Change this according to PM
     /* set qos for best effort communication without keys */
     reader_qos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
@@ -486,7 +494,7 @@ RTI_TSS_datareader_qos(struct DDS_DataReaderQos *reader_qos, void *data)
     /* if there are more remote writers, increase these limits */
     reader_qos->reader_resource_limits.max_remote_writers = 30;
     reader_qos->reader_resource_limits.max_remote_writers_per_instance = 30;
-#endif //RTI_CONNEXT_MICRO
+#endif //RTI_PERF_MICRO
 
     return DDS_BOOLEAN_TRUE;
 }

@@ -87,7 +87,7 @@ RTI_TSS_ConfigData_get_config_data(const char *config_name)
         config_g->verbosity = LOG_VERBOSITY_INFO;
 
         /* set the name of the QoS XML file that will be used by DDS */
-        config_g->url_profile = "perftest_qos_profiles.xml";
+        config_g->url_profile = DDS_String_dup(RTI_TSS_gv_pm->get<std::string>("qosFile").c_str());
 
         config_g->length = 2 * 3;
         config_g->config_elements_ptr = new RTI_TSS_ExternalConfigDataElement[config_g->length];

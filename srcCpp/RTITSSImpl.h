@@ -111,7 +111,8 @@ public:
 
     void waitForAck(int sec, unsigned int nsec);
     void WaitForReaders(int numSubscribers);
-    bool waitForPingResponse(int timeout = PERFTEST_SEMAPHORE_TIMEOUT_INFINITE);
+    bool waitForPingResponse();
+    bool waitForPingResponse(int timeout);
     bool notifyPingResponse();
 
     unsigned int getPulledSampleCount();
