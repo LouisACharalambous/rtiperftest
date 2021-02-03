@@ -3,7 +3,7 @@
  * Subject to Eclipse Public License v1.0; see LICENSE.md for details.
  */
 
-#ifdef RTI_SECURE_PERFTEST
+
 
 #include "PerftestSecurity.h"
 #include "Infrastructure_common.h"
@@ -18,19 +18,19 @@
 #endif
 
 const std::string SECURE_PRIVATEKEY_FILE_PUB =
-        prefix + "./resource/secure/pubkey.pem";
+        prefix + "../../resource/secure/pubkey.pem";
 const std::string SECURE_PRIVATEKEY_FILE_SUB =
-        prefix + "./resource/secure/subkey.pem";
+        prefix + "../../resource/secure/subkey.pem";
 const std::string SECURE_CERTIFICATE_FILE_PUB =
-        prefix + "./resource/secure/pub.pem";
+        prefix + "../../resource/secure/pub.pem";
 const std::string SECURE_CERTIFICATE_FILE_SUB =
-        prefix + "./resource/secure/sub.pem";
+        prefix + "../../resource/secure/sub.pem";
 const std::string SECURE_CERTAUTHORITY_FILE =
-        prefix + "./resource/secure/cacert.pem";
+        prefix + "../../resource/secure/cacert.pem";
 const std::string SECURE_PERMISION_FILE_PUB =
-        prefix + "./resource/secure/signed_PerftestPermissionsPub.xml";
+        prefix + "../../resource/secure/signed_PerftestPermissionsPub.xml";
 const std::string SECURE_PERMISION_FILE_SUB =
-        prefix + "./resource/secure/signed_PerftestPermissionsSub.xml";
+        prefix + "../../resource/secure/signed_PerftestPermissionsSub.xml";
 const std::string SECURE_LIBRARY_NAME = "nddssecurity";
 
 /******************************************************************************/
@@ -194,5 +194,3 @@ std::string PerftestSecurity::printSecurityConfigurationSummary()
 
     return stringStream.str();
 }
-
-#endif /* RTI_SECURE_PERFTEST */

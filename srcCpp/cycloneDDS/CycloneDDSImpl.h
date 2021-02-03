@@ -11,6 +11,7 @@
 #include "Infrastructure_common.h"
 #include "MessagingIF.h"
 #include "PerftestTransport.h"
+#include "../connextDDS/PerftestSecurity.h"
 #include <algorithm>
 #include <map>
 #include <stdexcept>  // This header is part of the error handling library.
@@ -84,8 +85,8 @@ protected:
     perftest_cpp *_parent;
     ParameterManager *_PM;
     std::map<std::string, std::string> _qoSProfileNameMap;
-
     PerftestTransport _transport;
+    PerftestSecurity _security;
     PerftestSemaphore *_pongSemaphore;
     std::string _verbosityString;
 

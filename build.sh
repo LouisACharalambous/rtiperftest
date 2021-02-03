@@ -220,7 +220,6 @@ function clean()
     rm -rf "${script_location}"/srcJava/class
     rm -rf "${script_location}"/srcJava/jar
     rm -rf "${script_location}"/srcJava/com/rti/perftest/gen
-    rm -rf "${script_location}"/bin
     rm -f  "${script_location}"/srcCpp/*.txt
     rm -rf "${script_location}"/srcCpp/gen
     rm -rf "${script_location}"/srcCpp/perftest_build
@@ -845,15 +844,15 @@ function build_cpp()
     fi
 
     echo ""
-    echo -e "${INFO_TAG} Copying executable into: \"bin/${platform}/${RELEASE_DEBUG}\" folder"
+    echo -e "${INFO_TAG} Copying executable into: \"bin/Linux\" folder"
 
     # Create bin folder if not exists and copy executables, since this command
     # has to work for several different architectures, we will try to find the
     # executable name with different line endings.
     perftest_cpp_name_beginning="${classic_cpp_folder}/objs/${platform}/perftest_publisher"
     executable_extension=""
-    destination_folder="${bin_folder}/${platform}/${RELEASE_DEBUG}"
-    mkdir -p "${bin_folder}/${platform}/${RELEASE_DEBUG}"
+    destination_folder="${bin_folder}/Linux"
+    mkdir -p "${bin_folder}/Linux"
 
     # In Android the path of the built apk slightly differs from other built binaries.
     if [[ ${platform} == *"Android"* ]]; then
@@ -872,7 +871,7 @@ function build_cpp()
         executable_extension=".apk"
     fi
     cp -f "${perftest_cpp_name_beginning}${executable_extension}" \
-    "${destination_folder}/perftest_cpp${executable_extension}"
+    "${destination_folder}/ConnextDDSperftest_cpp${executable_extension}"
 
     if [ "$?" != 0 ]; then
         echo -e "${ERROR_TAG} Failure copying code for ${classic_cpp_lang_string}."
@@ -893,7 +892,7 @@ function build_cpp()
 
     # Removing README files if those are created by rtiddsgen
     rm -f "${classic_cpp_folder}/README_${platform}.txt"
-
+    clean
 }
 
 function build_micro_cpp()

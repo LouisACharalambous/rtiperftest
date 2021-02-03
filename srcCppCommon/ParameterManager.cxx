@@ -195,7 +195,7 @@ void ParameterManager::initialize()
     create("noPrintIntervals", noPrintIntervals);
 
     Parameter<std::string> *qosFile =
-            new Parameter<std::string>("perftest_qos_profiles.xml");
+            new Parameter<std::string>("../../perftest_qos_profiles.xml");
     qosFile->set_command_line_argument("-qosFile", "<filename>");
     qosFile->set_description(
             "Name of XML file for DDS Qos profiles.\n"
@@ -520,6 +520,27 @@ void ParameterManager::initialize()
     enableBatching->set_group(PUB);
     enableBatching->set_supported_middleware(Middleware::CYCLONEDDS);
     create("enableBatching", enableBatching);
+
+    Parameter<bool> *enableAuthentication = new Parameter<bool>(false);
+    enableAuthentication->set_command_line_argument("-enableAuthentication", "");
+    enableAuthentication->set_description(
+            "Enables Authentication in CycloneDDS.");
+    enableAuthentication->set_type(T_BOOL);
+    enableAuthentication->set_extra_argument(NO);
+    enableAuthentication->set_group(GENERAL);
+    enableAuthentication->set_supported_middleware(Middleware::CYCLONEDDS);
+    create("enableAuthentication", enableAuthentication);
+
+    Parameter<bool> *enableSecurity = new Parameter<bool>(false);
+    enableSecurity->set_command_line_argument("-enableSecurity", "");
+    enableSecurity->set_description(
+            "Enables all Security in CycloneDDS.");
+    enableSecurity->set_type(T_BOOL);
+    enableSecurity->set_extra_argument(NO);
+    enableSecurity->set_group(GENERAL);
+    enableSecurity->set_supported_middleware(Middleware::CYCLONEDDS);
+    create("enableSecurity", enableSecurity);
+
 
     Parameter<bool> *enableAutoThrottle = new Parameter<bool>(false);
     enableAutoThrottle->set_command_line_argument("-enableAutoThrottle", "");
@@ -974,6 +995,10 @@ void ParameterManager::initialize()
           #elif defined(PERFTEST_RTI_MICRO) || defined(PERFTEST_EPROSIMA_FASTDDS)
             "\nValues:\n\tUDPv4\n\tSHMEM\n"
             "Default: UDPv4"
+            #endif
+          #if defined(PERFTEST_CYCLONEDDS)
+            "\nValues:\n\tUDPv4\n\tUDPv6\n\tTCPv4\n\tTCPv6\n"
+            "Default: UDPv4"
           #endif
           );
     transport->set_type(T_STR);
@@ -983,15 +1008,23 @@ void ParameterManager::initialize()
             Middleware::RTIDDSPRO
             | Middleware::RAWTRANSPORT
             | Middleware::RTIDDSMICRO
+            | Middleware::CYCLONEDDS
             | Middleware::EPROSIMAFASTDDS);
     transport->add_valid_str_value("UDPv4");
+    #ifndef PERFTEST_CYCLONEDDS
     transport->add_valid_str_value("SHMEM");
+    #endif
   #if defined(PERFTEST_RTI_PRO)
     transport->add_valid_str_value("UDPv6");
     transport->add_valid_str_value("TCP");
     transport->add_valid_str_value("TLS");
     transport->add_valid_str_value("DTLS");
     transport->add_valid_str_value("WAN");
+  #endif
+  #if defined(PERFTEST_CYCLONEDDS)
+    transport->add_valid_str_value("UDPv6");
+    transport->add_valid_str_value("TCPv4");
+    transport->add_valid_str_value("TCPv6");
   #endif
     create("transport", transport);
 
@@ -1013,7 +1046,8 @@ void ParameterManager::initialize()
     multicast->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO);
+            | Middleware::RTIDDSMICRO
+            | Middleware::CYCLONEDDS);
     create("multicast", multicast);
 
     Parameter<std::string> *multicastAddr = new Parameter<std::string>();
@@ -1218,7 +1252,7 @@ void ParameterManager::initialize()
 
     ////////////////////////////////////////////////////////////////////////////
     // SECURE PARAMETER:
-  #ifdef RTI_SECURE_PERFTEST
+  #if defined (RTI_SECURE_PERFTEST) | defined (PERFTEST_CYCLONEDDS)
     Parameter<bool> *secureEncryptDiscovery = new Parameter<bool>(false);
     secureEncryptDiscovery->set_command_line_argument(
             "-secureEncryptDiscovery", "");
@@ -1228,6 +1262,7 @@ void ParameterManager::initialize()
     secureEncryptDiscovery->set_group(SECURE);
     secureEncryptDiscovery->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptDiscovery",  secureEncryptDiscovery);
 
@@ -1239,6 +1274,7 @@ void ParameterManager::initialize()
     secureSign->set_group(SECURE);
     secureSign->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureSign", secureSign);
 
@@ -1250,6 +1286,7 @@ void ParameterManager::initialize()
     secureEncryptBoth->set_group(SECURE);
     secureEncryptBoth->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptBoth", secureEncryptBoth);
 
@@ -1261,6 +1298,7 @@ void ParameterManager::initialize()
     secureEncryptData->set_group(SECURE);
     secureEncryptData->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptData", secureEncryptData);
 
@@ -1272,6 +1310,7 @@ void ParameterManager::initialize()
     secureEncryptSM->set_group(SECURE);
     secureEncryptSM->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptSM", secureEncryptSM);
 
@@ -1288,6 +1327,7 @@ void ParameterManager::initialize()
     secureGovernanceFile->set_group(SECURE);
     secureGovernanceFile->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureGovernanceFile", secureGovernanceFile);
 
@@ -1296,12 +1336,13 @@ void ParameterManager::initialize()
             "-securePermissionsFile", "<file>");
     securePermissionsFile->set_description(
             "Permissions file <optional>.\n"
-            "Default: \"./resource/secure/signed_PerftestPermissionsSub.xml\"");
+            "Default: \"../../resource/secure/signed_PerftestPermissionsSub.xml\"");
     securePermissionsFile->set_type(T_STR);
     securePermissionsFile->set_extra_argument(YES);
     securePermissionsFile->set_group(SECURE);
     securePermissionsFile->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("securePermissionsFile", securePermissionsFile);
 
@@ -1310,12 +1351,13 @@ void ParameterManager::initialize()
             "-secureCertAuthority", "<file>");
     secureCertAuthority->set_description(
             "Certificate authority file <optional>.\n"
-            "Default: \"./resource/secure/cacert.pem\"");
+            "Default: \"../../resource/secure/cacert.pem\"");
     secureCertAuthority->set_type(T_STR);
     secureCertAuthority->set_extra_argument(YES);
     secureCertAuthority->set_group(SECURE);
     secureCertAuthority->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureCertAuthority", secureCertAuthority);
 
@@ -1323,12 +1365,13 @@ void ParameterManager::initialize()
     secureCertFile->set_command_line_argument("-secureCertFile", "<file>");
     secureCertFile->set_description(
             "Certificate file <optional>.\n"
-            "Default: \"./resource/secure/sub.pem\"");
+            "Default: \"../../resource/secure/sub.pem\"");
     secureCertFile->set_type(T_STR);
     secureCertFile->set_extra_argument(YES);
     secureCertFile->set_group(SECURE);
     secureCertFile->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureCertFile", secureCertFile);
 
@@ -1336,12 +1379,13 @@ void ParameterManager::initialize()
     securePrivateKey->set_command_line_argument("-securePrivateKey", "<file>");
     securePrivateKey->set_description(
             "Private key file <optional>.\n"
-            "Default: \"./resource/secure/subkey.pem\"");
+            "Default: \"../../resource/secure/subkey.pem\"");
     securePrivateKey->set_type(T_STR);
     securePrivateKey->set_extra_argument(YES);
     securePrivateKey->set_group(SECURE);
     securePrivateKey->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("securePrivateKey", securePrivateKey);
 
@@ -1349,12 +1393,13 @@ void ParameterManager::initialize()
     secureLibrary->set_command_line_argument("-secureLibrary", "<file>");
     secureLibrary->set_description(
             "Private key file <optional>.\n"
-            "Default: \"./resource/secure/subkey.pem\"");
+            "Default: \"../../resource/secure/subkey.pem\"");
     secureLibrary->set_type(T_STR);
     secureLibrary->set_extra_argument(YES);
     secureLibrary->set_group(SECURE);
     secureLibrary->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     create("secureLibrary", secureLibrary);
 
@@ -1366,6 +1411,7 @@ void ParameterManager::initialize()
     secureDebug->set_group(SECURE);
     secureDebug->set_supported_middleware(
             Middleware::RTIDDSPRO
+            | Middleware::CYCLONEDDS
             | Middleware::RTIDDSMICRO);
     secureDebug->set_internal(true);
     create("secureDebug", secureDebug);
@@ -1570,7 +1616,7 @@ std::string ParameterManager::display_help()
                 output[static_cast<Group>(i)] +=
                         get_center_header_help_line("TRANSPORT");
                 break;
-          #ifdef RTI_SECURE_PERFTEST
+          #if defined (RTI_SECURE_PERFTEST) | (PERFTEST_CYCLONEDDS)
             case SECURE:
                 output[static_cast<Group>(i)] +=
                         get_center_header_help_line("SECURE");

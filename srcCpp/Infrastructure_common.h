@@ -6,7 +6,7 @@
 #ifndef INFRASTRUCTURE_COMMON_H_
 #define INFRASTRUCTURE_COMMON_H_
 
-#if defined(PERFTEST_RTI_PRO) || defined(PERFTEST_RTI_MICRO) || defined(PERFTEST_EPROSIMA_FASTDDS)
+#if defined(PERFTEST_RTI_PRO) || defined(PERFTEST_RTI_MICRO) || defined(PERFTEST_EPROSIMA_FASTDDS) || defined(PERFTEST_CYCLONEDDS)
   #include "perftest.h"
 #endif
 #include <fstream>
@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 
 #ifdef RTI_VXWORKS
   #include <unistd.h>

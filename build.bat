@@ -13,11 +13,19 @@ set "java_scripts_folder=%script_location%resource\scripts\java_execution_script
 set "bin_folder=%script_location%bin"
 set "cStringifyFile_script=%script_location%resource\scripts\cStringifyFile.pl"
 set "qos_file=%script_location%perftest_qos_profiles.xml"
+set "fastDDS_cmake_location=%script_location%resource\fastDDS\CMakeLists.txt"
+set "cycloneDDS_cmake_location=%script_location%resource\cycloneDDS\CMakeLists.txt"
 
 @REM # By default we will build pro, not micro
 set BUILD_MICRO=0
 set CMAKE_GENERATOR="NMake Makefiles"
 set ADDITIONAL_CMAKE_ARGS=""
+
+@REM # We don't build FastDDS Either
+set BUILD_FASTDDS=0
+
+@REM # We don't build CycloneDDS Either
+set BUILD_CYCLONEDDS=0
 
 @REM # In case we build micro, which version.
 set BUILD_MICRO_24x_COMPATIBILITY=0
@@ -95,6 +103,10 @@ if NOT "%1"=="" (
 				SET BUILD_MICRO_24x_COMPATIBILITY=1
 		) ELSE if "%1"=="--micro" (
 				SET BUILD_MICRO=1
+		) ELSE if "%1"=="--fastDDS" (
+				SET BUILD_FASTDDS=1
+		) ELSE if "%1"=="--cycloneDDS" (
+				SET BUILD_CYCLONEDDS=1
 		) ELSE if "%1"=="--skip-java-build" (
 				SET BUILD_JAVA=0
 		) ELSE if "%1"=="--skip-cpp-build" (
@@ -199,6 +211,32 @@ if NOT "%1"=="" (
 
 ::------------------------------------------------------------------------------
 
+if !BUILD_FASTDDS! == 1 (
+    @REM # Is fastrpsgen in the path?
+	call !JAVA_EXE! -version > nul 2>nul
+		if not !ERRORLEVEL! == 0 (
+		echo [ERROR]: fastrtpsgen executable not found.
+		exit /b 1
+	)
+)
+
+::------------------------------------------------------------------------------
+
+if !BUILD_CYCLONEDDS! == 1 (
+    @REM # CYCLONEDDSHOME variable is required.
+	if not exist "%CYCLONEDDSHOME%" (
+		echo [ERROR]: CYCLONEDDSHOME not set or path does not exist.
+		exit /b 1
+	)
+	call !JAVAC_EXE! -version > nul 2>nul
+		if not !ERRORLEVEL! == 0 (
+		echo [ERROR]: java executable not found.
+		exit /b 1
+	)
+)
+
+::------------------------------------------------------------------------------
+
 if "x!architecture!" == "x" (
 	echo [ERROR]: The platform argument is missing.
 	exit /b 1
@@ -294,25 +332,68 @@ if !GENERATE_QOS_STRING! == 1 (
 
 ::------------------------------------------------------------------------------
 
-if !BUILD_MICRO! == 1 (
-
-	set BUILD_CPP=0
-	set BUILD_CPP03=0
-	set BUILD_JAVA=0
-	set BUILD_CS=0
-
-	set "rtiddsgen_executable=!NDDSHOME!/rtiddsgen/scripts/rtiddsgen.bat"
-) else (
+if !BUILD_FASTDDS! == 1 (
 	@REM # This calls the function in charge of getting the name of the solution for C++
 	@REM # given the architecture.
-	echo .
 	call::get_solution_name
+    set "rtiddsgen_executable=!NDDSHOME!/bin/rtiddsgen.bat"
 
-	set "rtiddsgen_executable=!NDDSHOME!/bin/rtiddsgen.bat"
-)
+	) else ( if !BUILD_CYCLONEDDS! == 1 (
+		@REM # This calls the function in charge of getting the name of the solution for C++
+		@REM # given the architecture.
+
+
+		) else (if !BUILD_MICRO! == 1 (
+			set BUILD_CPP=0
+			set BUILD_CPP03=0
+			set BUILD_JAVA=0
+			set BUILD_CS=0
+			set "rtiddsgen_executable=!NDDSHOME!/rtiddsgen/scripts/rtiddsgen.bat"
+			
+			) else (
+				@REM # This calls the function in charge of getting the name of the solution for C++
+				@REM # given the architecture.
+				call::get_solution_name
+				set "rtiddsgen_executable=!NDDSHOME!/bin/rtiddsgen.bat"
+				)
+			)
+		)
 
 ::------------------------------------------------------------------------------
+
 if !BUILD_CPP! == 1 (
+
+	if !BUILD_CYCLONEDDS! ==1 (
+	call::copy_src_cpp_common
+	call::copy_src_cpp_cycloneDDS
+
+	call !JAVA_EXE! -classpath "\!CYCLONEDDSHOME!\lib\cmake\CycloneDDS\idlc\idlc-jar-with-dependencies.jar\" org.eclipse.cyclonedds.compilers.Idlc -d !classic_cpp_folder!\cycloneDDS -D PERFTEST_CYCLONEDDS -allstructs !idl_location!\perftest.idl"  
+    		if not !ERRORLEVEL! == 0 (
+		echo [ERROR]: Failure generating code for CycloneDDS..
+		call::clean_copied_files
+		exit /b 1
+	)
+	copy  %cycloneDDS_cmake_location% %script_location%\
+	call !CMAKE_EXE! -B%script_location%/cycloneDDS_build -G "Visual Studio 15 2017 Win64"  -H%script_location%
+		if not !ERRORLEVEL! == 0 (
+		echo [ERROR]: Failure generating makefiles with cmake for CycloneDDS.
+		call::clean_copied_files
+		exit /b 1
+	)
+	call !CMAKE_EXE! --build %script_location%/cycloneDDS_build --config !RELEASE_DEBUG! --target CycloneDDSperftest_cpp
+		if not !ERRORLEVEL! == 0 (
+		echo [ERROR]: Failure compiling code for CycloneDDS.
+		call::clean_copied_files
+		exit /b 1
+	)
+
+	echo [INFO]: Compilation successful
+
+	rmdir /s /q %script_location%cycloneDDS_build > nul 2>nul
+	del %script_location%\CMakeLists.txt > nul 2>nul
+	call:clean_copied_files
+
+	) else (
 
 	call::copy_src_cpp_common
 	call::copy_src_cpp_connextDDS
@@ -517,7 +598,7 @@ if !BUILD_CPP! == 1 (
 			echo and <OPENSSL_HOME>\!RELEASE_DEBUG!\bin
 		)
 		echo to your PATH variable
-	)
+	))
 )
 
 ::------------------------------------------------------------------------------
@@ -992,6 +1073,8 @@ GOTO:EOF
 	echo.    --micro                      Build RTI Perftest for RTI Connext Micro
 	echo.                                 By default RTI Perftest will assume it will be
 	echo.                                 built against RTI Connext DDS Professional.
+    echo.    --fastDDS                    Build for FastDDS (experimental)
+    echo.    --cycloneDDS                  Build for cycloneDDS (experimental)
 	echo.    --platform your_arch         Platform for which build.sh is going to compile
 	echo.                                 RTI Perftest.
 	echo.    --nddshome path              Path to the *RTI Connext DDS Professional
@@ -1069,6 +1152,18 @@ GOTO:EOF
 		del %classic_cpp_folder%\%%~nxi > nul 2>nul
 	)
 
+	del %classic_cpp_folder%\perftest_Zero*> nul 2>nul
+	del %classic_cpp_folder%\perftestPlugin.*> nul 2>nul
+	del %classic_cpp_folder%\perftestSupport.*> nul 2>nul
+	del %classic_cpp_folder%\perftest_publisher.*> nul 2>nul
+	del %classic_cpp_folder%\*.vcxproj> nul 2>nul
+	del %classic_cpp_folder%\*.filters> nul 2>nul
+	del %classic_cpp_folder%\perftest.cxx> nul 2>nul
+	del %classic_cpp_folder%\perftest.h> nul 2>nul
+	rmdir /s /q %script_location%srcCpp\objs > nul 2>nul
+	del %classic_cpp_folder%\*.txt> nul 2>nul
+	del %classic_cpp_folder%\*.sln> nul 2>nul
+
 	del %modern_cpp_folder%\perftest_publisher.cxx > nul 2>nul
 	del %modern_cpp_folder%\perftest_subscriber.cxx > nul 2>nul
 	del %classic_cpp_folder%\perftest_publisher.cxx > nul 2>nul
@@ -1077,6 +1172,13 @@ GOTO:EOF
 	for %%i in (%classic_cpp_folder%\connextDDS\*) do (
 		del %classic_cpp_folder%\%%~nxi > nul 2>nul
 	)
+
+	for %%i in (%classic_cpp_folder%\cycloneDDS\*) do (
+		del %classic_cpp_folder%\%%~nxi > nul 2>nul
+	)
+
+	del %classic_cpp_folder%\cycloneDDS\perftest.c > nul 2>nul
+	del %classic_cpp_folder%\cycloneDDS\perftest.h > nul 2>nul
 
 	@REM # Copy now files specific for pro/micro
 	set src_specific_folder="pro"
@@ -1104,6 +1206,38 @@ GOTO:EOF
 		call copy /Y %classic_cpp_folder%\connextDDS\%%~nxi %classic_cpp_folder%\ > nul 2>nul
 	)
 
+	@REM # Copy now files specific for pro/micro
+	set src_specific_folder="pro"
+	if !BUILD_MICRO! == 1 (
+		set src_specific_folder="micro"
+	)
+	for %%i in (%classic_cpp_folder%\connextDDS\!src_specific_folder!\*) do (
+		call copy /Y %classic_cpp_folder%\connextDDS\!src_specific_folder!\%%~nxi %classic_cpp_folder%\ > nul 2>nul
+	)
+
+GOTO:EOF
+
+:copy_src_cpp_fastDDS
+	@REM # Copy files in the common folder for pro and micro
+	for %%i in (%classic_cpp_folder%\fastDDS\*) do (
+		call copy /Y %classic_cpp_folder%\fastDDS\%%~nxi %classic_cpp_folder%\ > nul 2>nul
+	)
+	@REM # Copy now files specific for pro/micro
+	set src_specific_folder="pro"
+	if !BUILD_MICRO! == 1 (
+		set src_specific_folder="micro"
+	)
+	for %%i in (%classic_cpp_folder%\fastDDS\!src_specific_folder!\*) do (
+		call copy /Y %classic_cpp_folder%\fastDDS\!src_specific_folder!\%%~nxi %classic_cpp_folder%\ > nul 2>nul
+	)
+
+GOTO:EOF
+
+:copy_src_cpp_cycloneDDS
+	@REM # Copy files in the common folder for pro and micro
+	for %%i in (%classic_cpp_folder%\cycloneDDS\*) do (
+		call copy /Y %classic_cpp_folder%\cycloneDDS\%%~nxi %classic_cpp_folder%\ > nul 2>nul
+	)
 	@REM # Copy now files specific for pro/micro
 	set src_specific_folder="pro"
 	if !BUILD_MICRO! == 1 (
@@ -1173,6 +1307,8 @@ GOTO:EOF
 	rmdir /s /q %script_location%bin > nul 2>nul
 	rmdir /s /q %script_location%srcJava\class > nul 2>nul
 	rmdir /s /q %script_location%srcJava\jar > nul 2>nul
+	rmdir /s /q %script_location%srcCpp/fastDDS/perftest.* > nul 2>nul
+	rmdir /s /q %script_location%srcCpp/fastDDS/perftestPubSubTypes.* > nul 2>nul
 	call::clean_custom_type_files
 	call::clean_copied_files
 

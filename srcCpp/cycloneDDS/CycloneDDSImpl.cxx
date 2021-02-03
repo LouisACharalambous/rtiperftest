@@ -2,9 +2,9 @@
  * (c) 2005-2017  Copyright, Real-Time Innovations, Inc. All rights reserved.
  * Subject to Eclipse Public License v1.0; see LICENSE.md for details.
  */
+#include "CycloneDDSImpl.h"
 #include "MessagingIF.h"
 #include "perftest_cpp.h"
-#include "CycloneDDSImpl.h"
 
 const std::string GetMiddlewareVersionString()
 {
@@ -73,7 +73,7 @@ public:
 template <typename T>
 static void reader_on_data_available(dds_entity_t reader, void *arg)
 {
-    //printf("Sample received!\n");
+    // printf("Sample received!\n");
     ReaderListener<T> *listenerInfo = (ReaderListener<T> *) arg;
 
     int samplecount = dds_take(
@@ -90,9 +90,8 @@ static void reader_on_data_available(dds_entity_t reader, void *arg)
     }
 
     for (int i = 0; i < samplecount; i++) {
-
         if (listenerInfo->sampleInfo[i].valid_data) {
-            T *valid_sample = (T *)(&listenerInfo->samples[i]);
+            T *valid_sample = (T *) (&listenerInfo->samples[i]);
 
             listenerInfo->message.entity_id = valid_sample->entity_id;
             listenerInfo->message.seq_num = valid_sample->seq_num;
@@ -100,11 +99,11 @@ static void reader_on_data_available(dds_entity_t reader, void *arg)
             listenerInfo->message.timestamp_usec = valid_sample->timestamp_usec;
             listenerInfo->message.latency_ping = valid_sample->latency_ping;
             listenerInfo->message.size = valid_sample->bin_data._length;
-            listenerInfo->message.data = (char *) valid_sample->bin_data._buffer;
+            listenerInfo->message.data =
+                    (char *) valid_sample->bin_data._buffer;
 
             listenerInfo->callback->process_message(listenerInfo->message);
         }
-
     }
 }
 
@@ -135,16 +134,16 @@ void octet_seq_ensure_free(dds_sequence &sequence)
  */
 template <typename T>
 CycloneDDSImpl<T>::CycloneDDSImpl(dds_topic_descriptor_t topicDescriptor)
-    : _parent(nullptr),
-      _PM(nullptr),
-      _pongSemaphore(nullptr),
-      _topicDescriptor(topicDescriptor)
-    {
-        _qoSProfileNameMap[LATENCY_TOPIC_NAME] = std::string("LatencyQos");
-        _qoSProfileNameMap[ANNOUNCEMENT_TOPIC_NAME] = std::string("AnnouncementQos");
-        _qoSProfileNameMap[THROUGHPUT_TOPIC_NAME] = std::string("ThroughputQos");
-
-    }
+        : _parent(nullptr),
+          _PM(nullptr),
+          _pongSemaphore(nullptr),
+          _topicDescriptor(topicDescriptor)
+{
+    _qoSProfileNameMap[LATENCY_TOPIC_NAME] = std::string("LatencyQos");
+    _qoSProfileNameMap[ANNOUNCEMENT_TOPIC_NAME] =
+            std::string("AnnouncementQos");
+    _qoSProfileNameMap[THROUGHPUT_TOPIC_NAME] = std::string("ThroughputQos");
+}
 
 /*********************************************************
  * shutdown
@@ -152,7 +151,7 @@ CycloneDDSImpl<T>::CycloneDDSImpl(dds_topic_descriptor_t topicDescriptor)
 template <typename T>
 void CycloneDDSImpl<T>::shutdown()
 {
-    //TODO
+    // TODO
     // if (_participant != nullptr) {
 
     //     if (_publisher != nullptr) {
@@ -212,9 +211,7 @@ void CycloneDDSImpl<T>::configure_middleware_verbosity(int verbosity_level)
 
     std::ostringstream stringStream;
     stringStream << "<Tracing>"
-                 << "<Verbosity>"
-                 << verbosityString
-                 << "</Verbosity>"
+                 << "<Verbosity>" << verbosityString << "</Verbosity>"
                  << "<OutputFile>stdout</OutputFile>"
                  << "</Tracing>";
     _verbosityString = stringStream.str();
@@ -249,20 +246,10 @@ bool CycloneDDSImpl<T>::validate_input()
 template <typename T>
 std::string CycloneDDSImpl<T>::print_configuration()
 {
-
     std::ostringstream stringStream;
 
     // Domain ID
     stringStream << "\tDomain: " << _PM->get<int>("domain") << "\n";
-
-    // XML File
-    stringStream << "\tXML File: ";
-    if (_PM->get<bool>("noXmlQos")) {
-        stringStream << "Disabled\n";
-    } else {
-        stringStream << _PM->get<std::string>("qosFile") << "\n";
-    }
-
     stringStream << "\n" << _transport.printTransportConfigurationSummary();
 
     const std::vector<std::string> peerList =
@@ -278,16 +265,17 @@ std::string CycloneDDSImpl<T>::print_configuration()
             }
         }
     }
-
+    if(_PM->is_set("enableSecurity")){
+    stringStream << "\n" << _security.printSecurityConfigurationSummary();
+    }
     return stringStream.str();
 }
 
 /*********************************************************
  * CycloneDDSPublisher
  */
-template<typename T>
-class CycloneDDSPublisher : public IMessagingWriter
-{
+template <typename T>
+class CycloneDDSPublisher : public IMessagingWriter {
 protected:
     ParameterManager *_PM;
     dds_entity_t _writer;
@@ -326,10 +314,10 @@ public:
 
     void shutdown()
     {
-        // if (_writer->get_listener() != nullptr) {
-        //     delete(_writer->get_listener());
-        //     _writer->set_listener(nullptr);
-        // }
+        //       if (_writer->get_listener() != nullptr) {
+        //       delete(_writer->get_listener());
+        //   _writer->set_listener(nullptr);
+        //  }
     }
 
     void flush()
@@ -349,11 +337,11 @@ public:
 
     bool wait_for_ping_response()
     {
-        if(_pongSemaphore != nullptr) {
+        if (_pongSemaphore != nullptr) {
             if (!PerftestSemaphore_take(
-                    _pongSemaphore,
-                    PERFTEST_SEMAPHORE_TIMEOUT_INFINITE)) {
-                fprintf(stderr,"Unexpected error taking semaphore\n");
+                        _pongSemaphore,
+                        PERFTEST_SEMAPHORE_TIMEOUT_INFINITE)) {
+                fprintf(stderr, "Unexpected error taking semaphore\n");
                 return false;
             }
         }
@@ -363,11 +351,9 @@ public:
     /* time out in milliseconds */
     bool wait_for_ping_response(int timeout)
     {
-        if(_pongSemaphore != nullptr) {
-            if (!PerftestSemaphore_take(
-                    _pongSemaphore,
-                    timeout)) {
-                fprintf(stderr,"Unexpected error taking semaphore\n");
+        if (_pongSemaphore != nullptr) {
+            if (!PerftestSemaphore_take(_pongSemaphore, timeout)) {
+                fprintf(stderr, "Unexpected error taking semaphore\n");
                 return false;
             }
         }
@@ -376,9 +362,9 @@ public:
 
     bool notify_ping_response()
     {
-        if(_pongSemaphore != nullptr) {
+        if (_pongSemaphore != nullptr) {
             if (!PerftestSemaphore_give(_pongSemaphore)) {
-                fprintf(stderr,"Unexpected error giving semaphore\n");
+                fprintf(stderr, "Unexpected error giving semaphore\n");
                 return false;
             }
         }
@@ -403,11 +389,14 @@ public:
         return 0;
     }
 
-    void wait_for_ack(int sec, unsigned int nsec) {
+    void wait_for_ack(int sec, unsigned int nsec)
+    {
         if (_isReliable) {
-            retCode = dds_wait_for_acks(_writer, dds_duration_t (sec * DDS_NSECS_IN_SEC + nsec));
+            retCode = dds_wait_for_acks(
+                    _writer,
+                    dds_duration_t(sec * DDS_NSECS_IN_SEC + nsec));
             if (retCode != DDS_RETCODE_OK) {
-                fprintf(stderr,"WaitForAck issue (retCode %d)\n", retCode);
+                fprintf(stderr, "WaitForAck issue (retCode %d)\n", retCode);
             }
         } else {
             PerftestClock::milliSleep(nsec / DDS_NSECS_IN_MSEC);
@@ -418,7 +407,7 @@ public:
     {
         _data.entity_id = message.entity_id;
         _data.seq_num = message.seq_num;
-        _data.timestamp_sec =message.timestamp_sec;
+        _data.timestamp_sec = message.timestamp_sec;
         _data.timestamp_usec = message.timestamp_usec;
         _data.latency_ping = message.latency_ping;
         octet_seq_ensure_length(_data.bin_data, message.size);
@@ -440,18 +429,19 @@ public:
         for (int c = 0; c < KEY_SIZE; c++) {
             _data.key[c] = (unsigned char) (key >> c * 8);
         }
-      #ifdef DEBUG_PING_PONG
+#ifdef DEBUG_PING_PONG
         std::cerr << " -- -- before sending it in the write\n";
-      #endif
+#endif
         // I could not find a write() call that receives an instance handle.
         retCode = dds_write(_writer, &_data);
         if (retCode != DDS_RETCODE_OK) {
             fprintf(stderr, "Could not write: %s\n", dds_strretcode(-retCode));
             return false;
         }
-      #ifdef DEBUG_PING_PONG
-        else std::cerr << ">> wrote sample " << _data.seq_num << std::endl;
-      #endif
+#ifdef DEBUG_PING_PONG
+        else
+            std::cerr << ">> wrote sample " << _data.seq_num << std::endl;
+#endif
 
         return true;
     }
@@ -462,8 +452,7 @@ public:
  */
 
 template <typename T>
-class CycloneDDSSubscriber : public IMessagingReader
-{
+class CycloneDDSSubscriber : public IMessagingReader {
 public:
     dds_entity_t _reader;
     ParameterManager *_PM;
@@ -478,7 +467,10 @@ public:
     T samples[MAX_SAMPLES];
     dds_sample_info_t sampleInfo[MAX_SAMPLES];
 
-    CycloneDDSSubscriber(dds_entity_t reader, dds_entity_t participant, ParameterManager *PM)
+    CycloneDDSSubscriber(
+            dds_entity_t reader,
+            dds_entity_t participant,
+            ParameterManager *PM)
             : _reader(reader),
               _PM(PM),
               _message(),
@@ -486,7 +478,6 @@ public:
               _noData(true),
               _endTest(false)
     {
-
         memset(samples, 0, sizeof(samples));
         for (unsigned int i = 0; i < MAX_SAMPLES; i++) {
             samplePointers[i] = &samples[i];
@@ -506,11 +497,12 @@ public:
         }
 
         void *callback;
-        dds_lget_data_available (listener, (dds_on_data_available_fn*)&callback);
+        dds_lget_data_available(
+                listener,
+                (dds_on_data_available_fn *) &callback);
         _useReceiveThread = (callback == DDS_LUNSET);
 
         if (_useReceiveThread) {
-
             waitSet = dds_create_waitset(participant);
             dds_entity_t rdcond =
                     dds_create_readcondition(_reader, DDS_ANY_STATE);
@@ -672,7 +664,6 @@ bool CycloneDDSImpl<T>::configure_participant_qos(dds_qos_t *qos)
 template <typename T>
 bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
 {
-
     std::ostringstream stringStream;
 
     // Verbosity Information
@@ -696,9 +687,9 @@ bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
     // MaxQueuedRexmitMessages By default is 200
     stringStream << "<MaxQueuedRexmitMessages>1000</MaxQueuedRexmitMessages>";
 
-    //SynchronousDeliveryPriorityThreshold The default value is: "inf"
+    // SynchronousDeliveryPriorityThreshold The default value is: "inf"
     stringStream << "<SynchronousDeliveryPriorityThreshold>"
-                 << (_PM->is_set("asynchronousReceive")? "1":"0")
+                 << (_PM->is_set("asynchronousReceive") ? "1" : "0")
                  << "</SynchronousDeliveryPriorityThreshold>";
 
     stringStream << "</Internal>";
@@ -713,11 +704,28 @@ bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
                      << _PM->get<std::string>("allowInterfaces")
                      << "</NetworkInterfaceAddress>";
     }
+    stringStream << "<Transport>";
+    if ((_PM->get<std::string>("transport")) == "UDPv6") {
+        stringStream << "udp6";
+    _transport.transportConfig.nameString = "UDPv6";
+
+    } else if ((_PM->get<std::string>("transport")) == "UDPv4") {
+        stringStream << "udp";
+    _transport.transportConfig.nameString = "UDPv4";
+    }
+    else {
+        stringStream << "udp";
+    _transport.transportConfig.nameString = "UDPv4 (Default)";
+    }
+
+        stringStream << "</Transport>";
+
 
     if (_PM->is_set("multicast")) {
-        stringStream << "<AllowMulticast>true</AllowMulticast>"
-                     << "<EnableMulticastLoopback>true</EnableMulticastLoopback>"
-                     << "<PreferMulticast>true</PreferMulticast>";
+        stringStream
+                << "<AllowMulticast>false</AllowMulticast>"
+                << "<EnableMulticastLoopback>false</EnableMulticastLoopback>"
+                << "<PreferMulticast>false</PreferMulticast>";
     }
 
     // MaxMessageSize The default value is: "14720 B"
@@ -726,6 +734,63 @@ bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
     stringStream << "<FragmentSize>65000B</FragmentSize>";
 
     stringStream << "</General>";
+
+    //==========================================================================
+    // Everything that goes under "<Security>"
+    if (_PM->is_set("enableSecurity")) {
+        if (_PM->is_set("pub")){
+        stringStream << "<Security>";
+        stringStream << "<Authentication>";
+        stringStream << "<Library initFunction=\"init_authentication\" "
+                        "finalizeFunction=\"finalize_authentication\" "
+                        "path=\"dds_security_auth\"/>";
+        stringStream
+                << "<IdentityCA>file:../../resource/secure/cacert.pem</IdentityCA>";
+         if(_PM->is_set("secureCertFile")) {stringStream << "<IdentityCertificate>file:"+ _PM->get<std::string>("secureCertFile");} else {stringStream << "<IdentityCertificate>file:../../resource/secure/pub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/pub.pem");}stringStream << "</IdentityCertificate>";
+         if(_PM->is_set("securePrivateKey")) {stringStream << "<PrivateKey>file:"+ _PM->get<std::string>("securePrivateKey");} else {stringStream << "<PrivateKey>file:../../resource/secure/pubkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/pubkey.pem");}stringStream << "</PrivateKey>";
+        stringStream << "</Authentication>";
+        stringStream << "<Cryptographic>";
+        stringStream << "<Library initFunction=\"init_crypto\" "
+                        "finalizeFunction=\"finalize_crypto\" "
+                        "path=\"dds_security_crypto\"/>";
+        stringStream << "</Cryptographic>";
+        stringStream << "<AccessControl>";
+        stringStream << "<Library initFunction=\"init_access_control\" "
+                        "finalizeFunction=\"finalize_access_control\" "
+                        "path=\"dds_security_ac\"/>";
+        if(_PM->is_set("secureCertAuthority")) {stringStream << "<PermissionsCA>file:"+ _PM->get<std::string>("secureCertAuthority");} else {stringStream << "<PermissionsCA>file:../../resource/secure/cacert.pem"; _PM->set<std::string>("secureCertAuthority", "./resource/secure/cacert.pem");}stringStream << "</PermissionsCA>";
+        if(_PM->is_set("secureGovernanceFile")) {stringStream << "<Governance>file:"+ _PM->get<std::string>("secureGovernanceFile");} else {stringStream << "<Governance>file:../../resource/secure/signed_PerftestGovernance_Sign.xml"; _PM->set<std::string>("secureGovernanceFile", "../../resource/secure/signed_PerftestGovernance_Sign.xml");}stringStream << "</Governance>";
+        if(_PM->is_set("securePermissionsFile")) {stringStream << "<Permissions>file:"+ _PM->get<std::string>("securePermissionsFile");} else {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsPub.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsPub.xml");}stringStream << "</Permissions>";
+        stringStream << "</AccessControl>";
+        stringStream << "</Security>";
+        }
+                else{
+        stringStream << "<Security>";
+        stringStream << "<Authentication>";
+        stringStream << "<Library initFunction=\"init_authentication\" "
+                        "finalizeFunction=\"finalize_authentication\" "
+                        "path=\"dds_security_auth\"/>";
+        stringStream
+                << "<IdentityCA>file:../../resource/secure/cacert.pem</IdentityCA>";
+         if(_PM->is_set("secureCertFile")) {stringStream << "<IdentityCertificate>file:"+ _PM->get<std::string>("secureCertFile");} else {stringStream << "<IdentityCertificate>file:../../resource/secure/sub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/sub.pem");}stringStream << "</IdentityCertificate>";
+         if(_PM->is_set("securePrivateKey")) {stringStream << "<PrivateKey>file:"+ _PM->get<std::string>("securePrivateKey");} else {stringStream << "<PrivateKey>file:../../resource/secure/subkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/subkey.pem");}stringStream << "</PrivateKey>";
+        stringStream << "</Authentication>";
+        stringStream << "<Cryptographic>";
+        stringStream << "<Library initFunction=\"init_crypto\" "
+                        "finalizeFunction=\"finalize_crypto\" "
+                        "path=\"dds_security_crypto\"/>";
+        stringStream << "</Cryptographic>";
+        stringStream << "<AccessControl>";
+        stringStream << "<Library initFunction=\"init_access_control\" "
+                        "finalizeFunction=\"finalize_access_control\" "
+                        "path=\"dds_security_ac\"/>";
+        if(_PM->is_set("secureCertAuthority")) {stringStream << "<PermissionsCA>file:"+ _PM->get<std::string>("secureCertAuthority");} else {stringStream << "<PermissionsCA>file:../../resource/secure/cacert.pem"; _PM->set<std::string>("secureCertAuthority", "../../resource/secure/cacert.pem");}stringStream << "</PermissionsCA>";
+        if(_PM->is_set("secureGovernanceFile")) {stringStream << "<Governance>file:"+ _PM->get<std::string>("secureGovernanceFile");} else {stringStream << "<Governance>file:../../resource/secure/signed_PerftestGovernance_Sign.xml"; _PM->set<std::string>("secureGovernanceFile", "../../resource/secure/signed_PerftestGovernance_Sign.xml");}stringStream << "</Governance>";
+        if(_PM->is_set("securePermissionsFile")) {stringStream << "<Permissions>file:"+ _PM->get<std::string>("securePermissionsFile");} else {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsSub.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsSub.xml");}stringStream << "</Permissions>";
+        stringStream << "</AccessControl>";
+        stringStream << "</Security>";
+        }
+    }
 
     //==========================================================================
     // Everything that goes under "<Sizing>"
@@ -740,16 +805,16 @@ bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
                   << stringStream.str() << std::endl;
     }
 
-    dds_return_t retCode = ddsrt_setenv(
-            "CYCLONEDDS_URI",
-            stringStream.str().c_str());
+    dds_return_t retCode =
+            ddsrt_setenv("CYCLONEDDS_URI", stringStream.str().c_str());
     if (retCode != DDS_RETCODE_OK) {
-        fprintf(stderr,"dds_set_status_mask error (retCode %d)\n", retCode);
+        fprintf(stderr, "dds_set_status_mask error (retCode %d)\n", retCode);
         return false;
     }
 
     return true;
 }
+
 
 /*********************************************************
  * configure_writer_qos
@@ -759,10 +824,8 @@ bool CycloneDDSImpl<T>::configure_writer_qos(
         dds_qos_t *qos,
         std::string qosProfile)
 {
-
     // RELIABILITY AND DURABILITY
     if (qosProfile != "AnnouncementQos") {
-
         if (_PM->get<bool>("bestEffort")) {
             qos->reliability.kind = DDS_RELIABILITY_BEST_EFFORT;
         } else {
@@ -771,7 +834,8 @@ bool CycloneDDSImpl<T>::configure_writer_qos(
         }
 
         if (_PM->is_set("durability")) {
-            qos->durability.kind = (dds_durability_kind) _PM->get<int>("durability");
+            qos->durability.kind =
+                    (dds_durability_kind) _PM->get<int>("durability");
         } else {
             qos->durability.kind = DDS_DURABILITY_VOLATILE;
         }
@@ -788,7 +852,7 @@ bool CycloneDDSImpl<T>::configure_writer_qos(
             qos->history.kind = DDS_HISTORY_KEEP_ALL;
         }
 
-    } else { // AnnouncementQoS
+    } else {  // AnnouncementQoS
         qos->reliability.kind = DDS_RELIABILITY_RELIABLE;
         qos->durability.kind = DDS_DURABILITY_TRANSIENT_LOCAL;
     }
@@ -812,41 +876,29 @@ bool CycloneDDSImpl<T>::configure_writer_qos(
 
     /* Enable write batching, by default disabled */
     if (_PM->is_set("enableBatching")) {
-        dds_write_set_batch (true);
+        dds_write_set_batch(true);
     }
 
     // SUMMARY FOR THE RESOURCE LIMITS
     if (_PM->get<bool>("showResourceLimits")) {
         std::ostringstream stringStream;
 
-        stringStream << "Resource Limits DW ("
-                    << qosProfile
-                    << " topic):\n"
-                    << "\tSamples (Max): "
-                    << qos->resource_limits.max_samples
-                    << "\n";
+        stringStream << "Resource Limits DW (" << qosProfile << " topic):\n"
+                     << "\tSamples (Max): " << qos->resource_limits.max_samples
+                     << "\n";
 
         if (_PM->get<bool>("keyed")) {
             stringStream << "\tInstances (Max): "
-                        << qos->resource_limits.max_instances
-                        << "\n";
+                         << qos->resource_limits.max_instances << "\n";
             stringStream << "\tMax Samples per Instance: "
-                        << qos->resource_limits.max_samples_per_instance
-                        << "\n";
-
+                         << qos->resource_limits.max_samples_per_instance
+                         << "\n";
         }
-        stringStream << "\tDurability is: "
-                    << qos->durability.kind
-                    << "\n";
-        stringStream << "\tHistory is: "
-                    << qos->history.kind
-                    << "\n";
-        stringStream << "\tReliability is: "
-                    << qos->reliability.kind
-                    << "\n";
+        stringStream << "\tDurability is: " << qos->durability.kind << "\n";
+        stringStream << "\tHistory is: " << qos->history.kind << "\n";
+        stringStream << "\tReliability is: " << qos->reliability.kind << "\n";
         stringStream << "\tMax blocking time is (s/ns): "
-                    << qos->reliability.max_blocking_time
-                    << "\n";
+                     << qos->reliability.max_blocking_time << "\n";
         fprintf(stderr, "%s\n", stringStream.str().c_str());
     }
     return true;
@@ -860,10 +912,8 @@ bool CycloneDDSImpl<T>::configure_reader_qos(
         dds_qos_t *qos,
         std::string qosProfile)
 {
-
     // RELIABILITY AND DURABILITY
     if (qosProfile != "AnnouncementQos") {
-
         if (_PM->get<bool>("bestEffort")) {
             qos->reliability.kind = DDS_RELIABILITY_BEST_EFFORT;
         } else {
@@ -872,7 +922,8 @@ bool CycloneDDSImpl<T>::configure_reader_qos(
         }
 
         if (_PM->is_set("durability")) {
-            qos->durability.kind = (dds_durability_kind) _PM->get<int>("durability");
+            qos->durability.kind =
+                    (dds_durability_kind) _PM->get<int>("durability");
         } else {
             qos->durability.kind = DDS_DURABILITY_VOLATILE;
         }
@@ -889,7 +940,7 @@ bool CycloneDDSImpl<T>::configure_reader_qos(
             qos->history.kind = DDS_HISTORY_KEEP_ALL;
         }
 
-    } else { // AnnouncementQoS
+    } else {  // AnnouncementQoS
         qos->reliability.kind = DDS_RELIABILITY_RELIABLE;
         qos->durability.kind = DDS_DURABILITY_TRANSIENT_LOCAL;
     }
@@ -897,7 +948,8 @@ bool CycloneDDSImpl<T>::configure_reader_qos(
     // RESOURCE LIMITS
     if (qosProfile == "ThroughputQos") {
         if (_PM->is_set("receiveQueueSize")) {
-            qos->resource_limits.max_samples = _PM->get<int>("receiveQueueSize");
+            qos->resource_limits.max_samples =
+                    _PM->get<int>("receiveQueueSize");
         }
         qos->resource_limits.max_samples = 10000;
     } else if (qosProfile == "LatencyQos") {
@@ -918,31 +970,20 @@ bool CycloneDDSImpl<T>::configure_reader_qos(
     if (_PM->get<bool>("showResourceLimits")) {
         std::ostringstream stringStream;
 
-        stringStream << "Resource Limits DR ("
-                    << qosProfile
-                    << " topic):\n"
-                    << "\tSamples (Max): "
-                    << qos->resource_limits.max_samples
-                    << "\n";
+        stringStream << "Resource Limits DR (" << qosProfile << " topic):\n"
+                     << "\tSamples (Max): " << qos->resource_limits.max_samples
+                     << "\n";
 
-        if (_PM->get<bool>("keyed")){
+        if (_PM->get<bool>("keyed")) {
             stringStream << "\tInstances (Max): "
-                        << qos->resource_limits.max_instances
-                        << "\n";
+                         << qos->resource_limits.max_instances << "\n";
             stringStream << "\tMax Samples per Instance: "
-                        << qos->resource_limits.max_samples_per_instance
-                        << "\n";
-
+                         << qos->resource_limits.max_samples_per_instance
+                         << "\n";
         }
-        stringStream << "\tDurability is: "
-                    << qos->durability.kind
-                    << "\n";
-        stringStream << "\tHistory is: "
-                    << qos->history.kind
-                    << "\n";
-        stringStream << "\tReliability is: "
-                    << qos->reliability.kind
-                    << "\n";
+        stringStream << "\tDurability is: " << qos->durability.kind << "\n";
+        stringStream << "\tHistory is: " << qos->history.kind << "\n";
+        stringStream << "\tReliability is: " << qos->reliability.kind << "\n";
         fprintf(stderr, "%s\n", stringStream.str().c_str());
     }
 
@@ -958,6 +999,7 @@ bool CycloneDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
     // Assign ParameterManager
     _PM = &PM;
     _transport.initialize(_PM);
+    _security.initialize(_PM);
     dds_return_t retCode;
 
     if (!validate_input()) {
@@ -968,9 +1010,8 @@ bool CycloneDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
      * Only if we run the latency test we need to wait
      * for pongs after sending pings
      */
-    _pongSemaphore = _PM->get<bool>("latencyTest")
-            ? PerftestSemaphore_new()
-            : nullptr;
+    _pongSemaphore =
+            _PM->get<bool>("latencyTest") ? PerftestSemaphore_new() : nullptr;
 
     /*
      * Prior to create any Cyclone DDS entity, we will set the CYCLONEDDS_URI
@@ -1101,11 +1142,10 @@ IMessagingWriter *CycloneDDSImpl<T>::create_writer(const char *topicName)
                 dds_strretcode(-writer));
         return nullptr;
     }
-    dds_return_t retCode = dds_set_status_mask(
-            writer,
-            DDS_PUBLICATION_MATCHED_STATUS);
+    dds_return_t retCode =
+            dds_set_status_mask(writer, DDS_PUBLICATION_MATCHED_STATUS);
     if (retCode != DDS_RETCODE_OK) {
-        fprintf(stderr,"dds_set_status_mask error (retCode %d)\n", retCode);
+        fprintf(stderr, "dds_set_status_mask error (retCode %d)\n", retCode);
     }
 
 
@@ -1125,8 +1165,7 @@ IMessagingReader *CycloneDDSImpl<T>::create_reader(
         const char *topicName,
         IMessagingCB *callback)
 {
-
-   if (_participant < 0) {
+    if (_participant < 0) {
         fprintf(stderr, "Participant is not valid\n");
         return nullptr;
     }
@@ -1165,14 +1204,13 @@ IMessagingReader *CycloneDDSImpl<T>::create_reader(
     if (callback != nullptr) {
         ReaderListener<T> *listenerInfo = new ReaderListener<T>(callback);
         dataReaderListener = dds_create_listener(listenerInfo);
-        dds_lset_data_available(dataReaderListener, reader_on_data_available<T>);
+        dds_lset_data_available(
+                dataReaderListener,
+                reader_on_data_available<T>);
     }
 
-    dds_entity_t reader = dds_create_reader(
-            _subscriber,
-            topic,
-            drQos,
-            dataReaderListener);
+    dds_entity_t reader =
+            dds_create_reader(_subscriber, topic, drQos, dataReaderListener);
     dds_delete_qos(drQos);
     if (reader < 0) {
         fprintf(stderr,
@@ -1184,7 +1222,7 @@ IMessagingReader *CycloneDDSImpl<T>::create_reader(
             reader,
             DDS_SUBSCRIPTION_MATCHED_STATUS | DDS_DATA_AVAILABLE_STATUS);
     if (retCode != DDS_RETCODE_OK) {
-        fprintf(stderr,"dds_set_status_mask error (retCode %d)\n", retCode);
+        fprintf(stderr, "dds_set_status_mask error (retCode %d)\n", retCode);
     }
 
     return new CycloneDDSSubscriber<T>(reader, _participant, _PM);

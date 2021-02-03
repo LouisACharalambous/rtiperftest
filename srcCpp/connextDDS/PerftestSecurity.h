@@ -2,7 +2,6 @@
  * (c) 2005-2019  Copyright, Real-Time Innovations, Inc. All rights reserved.
  * Subject to Eclipse Public License v1.0; see LICENSE.md for details.
  */
-#ifdef RTI_SECURE_PERFTEST
 
 #ifndef PERFTEST_SECURITY_H
 #define PERFTEST_SECURITY_H
@@ -40,4 +39,3 @@ private:
 };
 
 #endif /* PERFTEST_SECURITY_H */
-#endif /* RTI_SECURE_PERFTEST */

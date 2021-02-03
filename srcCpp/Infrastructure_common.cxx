@@ -4,6 +4,9 @@
  */
 
 #include "Infrastructure_common.h"
+#include <time.h>
+#include <chrono>
+    auto start = std::chrono::steady_clock::now();
 
 /*
  * Connext DDS Pro and Micro have their own implementation for:
@@ -21,6 +24,12 @@
 
 /********************************************************************/
 /* Perftest Semaphore class */
+
+int clock_gettime(int, struct timespec *tv)
+{
+    return timespec_get(tv, TIME_UTC);
+}
+
 
 PerftestSemaphore* PerftestSemaphore_new(unsigned int count)
 {
@@ -99,7 +108,9 @@ PerftestClock &PerftestClock::getInstance()
 
 unsigned long long PerftestClock::getTime()
 {
-    clock_gettime(CLOCK_MONOTONIC, &timeStruct);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<float> duration = end - start;
+    clock_gettime(1, &timeStruct);
     return (timeStruct.tv_sec * ONE_MILLION) + timeStruct.tv_nsec/1000;
 }
 
@@ -171,7 +182,7 @@ struct PerftestThreadOnSpawnedMethod
     ThreadOnSpawnedMethod method;
     void *thread_param;
 
-}
+};
 
 PerftestThread* PerftestThread_new(
     const char *name,

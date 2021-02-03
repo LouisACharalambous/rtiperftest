@@ -1025,7 +1025,7 @@ bool PerftestConfigureSecurity(
     // check if governance file provided
     if (_PM->get<std::string>("secureGovernanceFile").empty()) {
         // choose a pre-built governance file
-        governanceFilePath = "./resource/secure/signed_PerftestGovernance_";
+        governanceFilePath = "../../resource/secure/signed_PerftestGovernance_";
         if (_PM->get<bool>("secureEncryptDiscovery")) {
             governanceFilePath += "Discovery";
         }
