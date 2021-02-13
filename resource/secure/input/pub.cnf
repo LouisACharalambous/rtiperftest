@@ -1,11 +1,11 @@
-prompt=no
-distinguished_name      = req_distinguished_name
+prompt                  = no
+string_mask 			= utf8only
+distinguished_name	    = req_distinguished_name
 
 [ req_distinguished_name ]
-countryName=US
-stateOrProvinceName=CA
-localityName=Sunnyvale
-organizationName=Real Time Innovations
-emailAddress=pub@rti.com
-commonName=perftest
-
+countryName     		= GB
+stateOrProvinceName	    = City of London
+localityName			= London
+organizationName		= City University of London
+emailAddress			= pub@city.ac.uk
+commonName				= perftest

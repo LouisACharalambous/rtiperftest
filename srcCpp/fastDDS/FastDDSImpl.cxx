@@ -2,9 +2,9 @@
  * (c) 2005-2017  Copyright, Real-Time Innovations, Inc. All rights reserved.
  * Subject to Eclipse Public License v1.0; see LICENSE.md for details.
  */
+#include "FastDDSImpl.h"
 #include "MessagingIF.h"
 #include "perftest_cpp.h"
-#include "FastDDSImpl.h"
 
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::rtps;
@@ -27,7 +27,8 @@ public:
     {
     }
 
-    virtual void on_inconsistent_topic(Topic *topic, InconsistentTopicStatus status)
+    virtual void
+            on_inconsistent_topic(Topic *topic, InconsistentTopicStatus status)
     {
         (void) status;
         fprintf(stderr,
@@ -42,9 +43,9 @@ public:
             const OfferedIncompatibleQosStatus &status)
     {
         fprintf(stderr,
-               "Found incompatible reader for writer %s QoS is %d.\n",
-               writer->get_topic()->get_name().c_str(),
-               status.last_policy_id);
+                "Found incompatible reader for writer %s QoS is %d.\n",
+                writer->get_topic()->get_name().c_str(),
+                status.last_policy_id);
         fflush(stderr);
     }
 
@@ -53,9 +54,9 @@ public:
             const RequestedIncompatibleQosStatus &status)
     {
         fprintf(stderr,
-               "Found incompatible writer for reader %s QoS is %d.\n",
-               reader->get_topicdescription()->get_name().c_str(),
-               status.last_policy_id);
+                "Found incompatible writer for reader %s QoS is %d.\n",
+                reader->get_topicdescription()->get_name().c_str(),
+                status.last_policy_id);
         fflush(stderr);
     }
 };
@@ -97,13 +98,16 @@ public:
     virtual void on_data_available(DataReader *reader)
     {
         // printf("On data available called\n");
-        // if ((reader->get_status_mask() & StatusMask::data_available()) == 0) {
-        //     std::cerr << "Status mask does NOT contain data_available. Why is this called?" << std::endl;
-        //     std::cerr << "Reader mask is " << reader->get_status_mask() << std::endl;
-        //     std::cerr << "On_data_available mask is " << StatusMask::data_available() << std::endl;
-        //     return;
+        // if ((reader->get_status_mask() & StatusMask::data_available()) == 0)
+        // {
+        //     std::cerr << "Status mask does NOT contain data_available. Why is
+        //     this called?" << std::endl; std::cerr << "Reader mask is " <<
+        //     reader->get_status_mask() << std::endl; std::cerr <<
+        //     "On_data_available mask is " << StatusMask::data_available() <<
+        //     std::endl; return;
         // } else {
-        //     std::cerr << "Status mask does contain data_available" << std::endl;
+        //     std::cerr << "Status mask does contain data_available" <<
+        //     std::endl;
         // }
 
         /*
@@ -113,7 +117,7 @@ public:
         if (_callback == nullptr) {
             return;
         }
-        
+
         /*
          * FastDDS does not have "take()". This may impact in the overall
          * performance when the receive queue is full of unread samples.
@@ -139,9 +143,9 @@ public:
             _message.latency_ping = _sample.latency_ping();
             _message.size = (int) _sample.bin_data().size();
             // _message.data = _sample.bin_data();
-          #ifdef DEBUG_PING_PONG
+#ifdef DEBUG_PING_PONG
             std::cout << "<< got sample " << _sample.seq_num() << std::endl;
-          #endif
+#endif
 
             _callback->process_message(_message);
         }
@@ -157,20 +161,20 @@ public:
 
 template <typename T>
 FastDDSImpl<T>::FastDDSImpl()
-    : _parent(nullptr),
-      _PM(nullptr),
-      _pongSemaphore(nullptr),
-      _factory(nullptr),
-      _participant(nullptr),
-      _publisher(nullptr),
-      _subscriber(nullptr),
-      _type(new T())
-    {
-        _qoSProfileNameMap[LATENCY_TOPIC_NAME] = std::string("LatencyQos");
-        _qoSProfileNameMap[ANNOUNCEMENT_TOPIC_NAME] = std::string("AnnouncementQos");
-        _qoSProfileNameMap[THROUGHPUT_TOPIC_NAME] = std::string("ThroughputQos");
-
-    }
+        : _parent(nullptr),
+          _PM(nullptr),
+          _pongSemaphore(nullptr),
+          _factory(nullptr),
+          _participant(nullptr),
+          _publisher(nullptr),
+          _subscriber(nullptr),
+          _type(new T())
+{
+    _qoSProfileNameMap[LATENCY_TOPIC_NAME] = std::string("LatencyQos");
+    _qoSProfileNameMap[ANNOUNCEMENT_TOPIC_NAME] =
+            std::string("AnnouncementQos");
+    _qoSProfileNameMap[THROUGHPUT_TOPIC_NAME] = std::string("ThroughputQos");
+}
 
 /*********************************************************
  * shutdown
@@ -178,9 +182,7 @@ FastDDSImpl<T>::FastDDSImpl()
 template <typename T>
 void FastDDSImpl<T>::shutdown()
 {
-
     if (_participant != NULL) {
-
         if (_publisher != nullptr) {
             _participant->delete_publisher(_publisher);
         }
@@ -213,22 +215,26 @@ template <typename T>
 void FastDDSImpl<T>::configure_middleware_verbosity(int verbosity_level)
 {
     switch (verbosity_level) {
-        case 0: fprintf(stderr, "[Error]: Cannot set verbosity to SILENT\n");
-            break;
-        case 1: Log::SetVerbosity(Log::Error);
-            fprintf(stderr, "Setting verbosity to ERROR\n");
-            break;
-        case 2: Log::SetVerbosity(Log::Warning);
-            fprintf(stderr, "Setting verbosity to WARNING\n");
-            break;
-        case 3: Log::SetVerbosity(Log::Info);
-            fprintf(stderr, "Setting verbosity to INFO\n");
-            break;
-        default:
-            fprintf(stderr,
-                    "[Error]: Invalid value for the verbosity parameter. Using "
-                    "default\n");
-            break;
+    case 0:
+        fprintf(stderr, "[Error]: Cannot set verbosity to SILENT\n");
+        break;
+    case 1:
+        Log::SetVerbosity(Log::Error);
+        fprintf(stderr, "Setting verbosity to ERROR\n");
+        break;
+    case 2:
+        Log::SetVerbosity(Log::Warning);
+        fprintf(stderr, "Setting verbosity to WARNING\n");
+        break;
+    case 3:
+        Log::SetVerbosity(Log::Info);
+        fprintf(stderr, "Setting verbosity to INFO\n");
+        break;
+    default:
+        fprintf(stderr,
+                "[Error]: Invalid value for the verbosity parameter. Using "
+                "default\n");
+        break;
     }
 }
 
@@ -238,7 +244,6 @@ void FastDDSImpl<T>::configure_middleware_verbosity(int verbosity_level)
 template <typename T>
 bool FastDDSImpl<T>::validate_input()
 {
-
     // Manage transport parameter
     if (!_transport.validate_input()) {
         fprintf(stderr, "Failure validating the transport options.\n");
@@ -262,19 +267,10 @@ bool FastDDSImpl<T>::validate_input()
 template <typename T>
 std::string FastDDSImpl<T>::print_configuration()
 {
-
     std::ostringstream stringStream;
 
     // Domain ID
     stringStream << "\tDomain: " << _PM->get<int>("domain") << "\n";
-
-    // XML File
-    stringStream << "\tXML File: ";
-    if (_PM->get<bool>("noXmlQos")) {
-        stringStream << "Disabled\n";
-    } else {
-        stringStream << _PM->get<std::string>("qosFile") << "\n";
-    }
 
     stringStream << "\tAsynchronous Publishing: ";
     if (_PM->get<bool>("asynchronous")) {
@@ -284,6 +280,10 @@ std::string FastDDSImpl<T>::print_configuration()
     }
 
     stringStream << "\n" << _transport.printTransportConfigurationSummary();
+
+    if (_PM->group_is_used(SECURE)) {
+        stringStream << "\n" << _security.printSecurityConfigurationSummary();
+    }
 
     const std::vector<std::string> peerList =
             _PM->get_vector<std::string>("peer");
@@ -306,9 +306,8 @@ std::string FastDDSImpl<T>::print_configuration()
  * FastDDSPublisher
  */
 
-template<typename T>
-class FastDDSPublisher : public IMessagingWriter
-{
+template <typename T>
+class FastDDSPublisher : public IMessagingWriter {
 protected:
     ParameterManager *_PM;
     DataWriter *_writer;
@@ -337,7 +336,7 @@ public:
               _instancesToBeWritten(instancesToBeWritten)
     {
         _isReliable = _writer->get_qos().reliability().kind
-                        == ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
+                == ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
 
         if (_PM->get<bool>("keyed")) {
             for (unsigned long i = 0; i < _numInstances; ++i) {
@@ -349,7 +348,7 @@ public:
 
             // Register the key of MAX_CFT_VALUE
             for (int c = 0; c < KEY_SIZE; c++) {
-                _data.key()[c] = (unsigned char)(MAX_CFT_VALUE >> c * 8);
+                _data.key()[c] = (unsigned char) (MAX_CFT_VALUE >> c * 8);
             }
             _instanceHandles.push_back(_writer->register_instance(&_data));
         }
@@ -363,7 +362,7 @@ public:
     void shutdown()
     {
         if (_writer->get_listener() != nullptr) {
-            delete(_writer->get_listener());
+            delete (_writer->get_listener());
             _writer->set_listener(nullptr);
         }
     }
@@ -376,7 +375,7 @@ public:
     {
         WriterListener *listener = (WriterListener *) _writer->get_listener();
         if (listener == nullptr) {
-            fprintf(stderr,"Could not get listener from writer.\n");
+            fprintf(stderr, "Could not get listener from writer.\n");
             return;
         }
         while (listener->_matchedSubscribers < numSubscribers) {
@@ -386,11 +385,11 @@ public:
 
     bool wait_for_ping_response()
     {
-        if(_pongSemaphore != NULL) {
+        if (_pongSemaphore != NULL) {
             if (!PerftestSemaphore_take(
-                    _pongSemaphore,
-                    PERFTEST_SEMAPHORE_TIMEOUT_INFINITE)) {
-                fprintf(stderr,"Unexpected error taking semaphore\n");
+                        _pongSemaphore,
+                        PERFTEST_SEMAPHORE_TIMEOUT_INFINITE)) {
+                fprintf(stderr, "Unexpected error taking semaphore\n");
                 return false;
             }
         }
@@ -400,11 +399,9 @@ public:
     /* time out in milliseconds */
     bool wait_for_ping_response(int timeout)
     {
-        if(_pongSemaphore != NULL) {
-            if (!PerftestSemaphore_take(
-                    _pongSemaphore,
-                    timeout)) {
-                fprintf(stderr,"Unexpected error taking semaphore\n");
+        if (_pongSemaphore != NULL) {
+            if (!PerftestSemaphore_take(_pongSemaphore, timeout)) {
+                fprintf(stderr, "Unexpected error taking semaphore\n");
                 return false;
             }
         }
@@ -413,9 +410,9 @@ public:
 
     bool notify_ping_response()
     {
-        if(_pongSemaphore != NULL) {
+        if (_pongSemaphore != NULL) {
             if (!PerftestSemaphore_give(_pongSemaphore)) {
-                fprintf(stderr,"Unexpected error giving semaphore\n");
+                fprintf(stderr, "Unexpected error giving semaphore\n");
                 return false;
             }
         }
@@ -440,7 +437,8 @@ public:
         return 0;
     }
 
-    void wait_for_ack(int sec, unsigned int nsec) {
+    void wait_for_ack(int sec, unsigned int nsec)
+    {
         if (_isReliable) {
             _writer->wait_for_acknowledgments(Duration_t(sec, nsec));
         } else {
@@ -484,17 +482,17 @@ public:
         //         _writer->write((void *) &_data, _instanceHandles.back());
         //     }
         // } else {
-          #ifdef DEBUG_PING_PONG
-            std::cerr << " -- -- before sending it in the write\n";
-          #endif
-            while(!_writer->write((void *) &_data)) {
-              #ifdef DEBUG_PING_PONG
-                std::cerr << "-- -- -- Still trying to send\n";
-              #endif
-            }
-          #ifdef DEBUG_PING_PONG
-            std::cerr << ">> wrote sample " << _data.seq_num() << std::endl;
-          #endif
+#ifdef DEBUG_PING_PONG
+        std::cerr << " -- -- before sending it in the write\n";
+#endif
+        while (!_writer->write((void *) &_data)) {
+#ifdef DEBUG_PING_PONG
+            std::cerr << "-- -- -- Still trying to send\n";
+#endif
+        }
+#ifdef DEBUG_PING_PONG
+        std::cerr << ">> wrote sample " << _data.seq_num() << std::endl;
+#endif
         // }
 
         return true;
@@ -506,8 +504,7 @@ public:
  */
 
 template <typename T>
-class FastDDSSubscriber : public IMessagingReader
-{
+class FastDDSSubscriber : public IMessagingReader {
 public:
     DataReader *_reader;
     ParameterManager *_PM;
@@ -539,9 +536,10 @@ public:
 
     void wait_for_writers(int numPublishers)
     {
-        ReaderListener<T> *listener = (ReaderListener<T> *) _reader->get_listener();
+        ReaderListener<T> *listener =
+                (ReaderListener<T> *) _reader->get_listener();
         if (listener == nullptr) {
-            fprintf(stderr,"Could not get listener from reader.\n");
+            fprintf(stderr, "Could not get listener from reader.\n");
             return;
         }
         while (listener->_matchedPublishers < numPublishers) {
@@ -569,16 +567,14 @@ public:
 
     TestMessage *receive_message()
     {
-        Duration_t timeout(2,0);
+        Duration_t timeout(2, 0);
 
         while (!this->_endTest) {
-
             /*
              * If wait_for_unread_message returns true, it means that there is
              * data there. If it returns false, it timed out.
              */
             if (_reader->wait_for_unread_message(timeout)) {
-
                 // In FastDDS we need to take samples one by one.
                 ReturnCode_t retCode = _reader->take_next_sample(
                         (void *) &_sample,
@@ -592,8 +588,8 @@ public:
                     return nullptr;
                 }
 
-                if (_sampleInfo.instance_state 
-                        == eprosima::fastdds::dds::ALIVE) {
+                if (_sampleInfo.instance_state
+                    == eprosima::fastdds::dds::ALIVE) {
                     _message.entity_id = _sample.entity_id();
                     _message.seq_num = _sample.seq_num();
                     _message.timestamp_sec = _sample.timestamp_sec();
@@ -604,14 +600,13 @@ public:
 
                     return &_message;
                 }
-            } // wait_for_unread
-        } // while _endTest
-        
+            }  // wait_for_unread
+        }      // while _endTest
+
         // If the while have not returned already data, we return nullptr;
         return nullptr;
     }
 };
-
 
 
 /*********************************************************
@@ -621,6 +616,101 @@ template <typename T>
 bool FastDDSImpl<T>::configure_participant_qos(DomainParticipantQos &qos)
 {
     qos = _factory->get_default_participant_qos();
+
+
+    if (_PM->group_is_used(SECURE)) {
+        std::string govFile =
+                "//../../resource/secure/signed_PerftestGovernance_";
+
+
+        if (_PM->is_set("secureEncryptDiscovery")) {
+            govFile = govFile + "Discovery";
+        }
+
+        if (_PM->is_set("secureSign")) {
+            govFile = govFile + "Sign";
+        }
+
+        if (_PM->is_set("secureEncryptBoth")) {
+            govFile = govFile + "EncryptBoth";
+        }
+
+        if (_PM->is_set("secureEncryptSM")) {
+            govFile = govFile + "EncryptSubmessage";
+        }
+
+        if (_PM->is_set("secureEncryptData")) {
+            govFile = govFile + "EncryptData";
+        }
+
+        std::string PART;
+        if (_PM->is_set("pub")) {
+            PART = "pub";
+        } else if (_PM->is_set("sub")) {
+            PART = "sub";
+        }
+
+
+        if (!_PM->is_set("secureCertFile")) {
+            _PM->set<std::string>(
+                    "secureCertFile",
+                    "//../../resource/secure/" + PART + ".pem");
+        }
+        if (!_PM->is_set("securePrivateKey")) {
+            _PM->set<std::string>(
+                    "securePrivateKey",
+                    "//../../resource/secure/" + PART + "key.pem");
+        }
+        if (!_PM->is_set("secureCertAuthority")) {
+            _PM->set<std::string>(
+                    "secureCertAuthority",
+                    "//../../resource/secure/cacert.pem");
+        }
+        if (!_PM->is_set("secureGovernanceFile")) {
+            _PM->set<std::string>("secureGovernanceFile", govFile + ".xml");
+        }
+        if (!_PM->is_set("securePermissionsFile")) {
+            _PM->set<std::string>(
+                    "securePermissionsFile",
+                    "//../../resource/secure/signed_PerftestPermissions" + PART
+                            + ".xml");
+        }
+
+        // Activate DDS:Auth:PKI-DH plugin
+        qos.properties().properties().emplace_back(
+                "dds.sec.auth.plugin",
+                "builtin.PKI-DH");
+        // Configure DDS:Auth:PKI-DH plugin
+        qos.properties().properties().emplace_back(
+                "dds.sec.auth.builtin.PKI-DH.identity_ca",
+                "file:" + _PM->get<std::string>("secureCertAuthority"));
+        qos.properties().properties().emplace_back(
+                "dds.sec.auth.builtin.PKI-DH.identity_certificate",
+                "file:" + _PM->get<std::string>("secureCertFile"));
+        qos.properties().properties().emplace_back(
+                "dds.sec.auth.builtin.PKI-DH.private_key",
+                "file:" + _PM->get<std::string>("securePrivateKey"));
+        // Activate DDS:Access:Permissions plugin
+        qos.properties().properties().emplace_back(
+                "dds.sec.access.plugin",
+                "builtin.Access-Permissions");
+        // Configure DDS:Access:Permissions plugin
+        qos.properties().properties().emplace_back(
+                "dds.sec.access.builtin.Access-Permissions.permissions_ca",
+                "file:" + _PM->get<std::string>("secureCertAuthority"));
+        qos.properties().properties().emplace_back(
+                "dds.sec.access.builtin.Access-Permissions.governance",
+                "file:" + _PM->get<std::string>("secureGovernanceFile"));
+        qos.properties().properties().emplace_back(
+                "dds.sec.access.builtin.Access-Permissions.permissions",
+                "file:" + _PM->get<std::string>("securePermissionsFile"));
+        // Activate DDS:Crypto:AES-GCM-GMAC plugin
+        qos.properties().properties().emplace_back(
+                "dds.sec.crypto.plugin",
+                "builtin.AES-GCM-GMAC");
+
+        _PM->set<std::string>("secureLibrary", "security");
+    }
 
     // Set initial peers and not use multicast
     const std::vector<std::string> peerList =
@@ -659,22 +749,22 @@ bool FastDDSImpl<T>::configure_writer_qos(
         DataWriterQos &qos,
         std::string qosProfile)
 {
-
     if (_PM->get<bool>("unbounded")) {
         qos.endpoint().history_memory_policy = DYNAMIC_RESERVE_MEMORY_MODE;
     }
 
     // RELIABILITY AND DURABILITY
     if (qosProfile != "AnnouncementQos") {
-
         if (_PM->get<bool>("bestEffort")) {
-            qos.reliability().kind = ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS;
+            qos.reliability().kind =
+                    ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS;
         } else {
-            qos.reliability().kind = ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
+            qos.reliability().kind =
+                    ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
             qos.reliability().max_blocking_time = c_TimeInfinite;
         }
 
-        if (_PM->get<bool>("noPositiveAcks")){
+        if (_PM->get<bool>("noPositiveAcks")) {
             qos.reliable_writer_qos().disable_positive_acks.enabled = true;
             if (_PM->is_set("keepDurationUsec")) {
                 qos.reliable_writer_qos().disable_positive_acks.duration =
@@ -685,14 +775,18 @@ bool FastDDSImpl<T>::configure_writer_qos(
         }
 
         if (_PM->is_set("durability")) {
-            qos.durability().kind =(DurabilityQosPolicyKind)_PM->get<int>("durability");
+            qos.durability().kind =
+                    (DurabilityQosPolicyKind) _PM->get<int>("durability");
         } else {
-            qos.durability().kind = DurabilityQosPolicyKind::VOLATILE_DURABILITY_QOS;
+            qos.durability().kind =
+                    DurabilityQosPolicyKind::VOLATILE_DURABILITY_QOS;
         }
 
-    } else { // AnnouncementQoS
-        qos.reliability().kind = ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
-        qos.durability().kind = DurabilityQosPolicyKind::TRANSIENT_LOCAL_DURABILITY_QOS;
+    } else {  // AnnouncementQoS
+        qos.reliability().kind =
+                ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
+        qos.durability().kind =
+                DurabilityQosPolicyKind::TRANSIENT_LOCAL_DURABILITY_QOS;
     }
 
     // HISTORY
@@ -709,7 +803,8 @@ bool FastDDSImpl<T>::configure_writer_qos(
 
     // // PUBLISH MODE
     if (_PM->get<bool>("asynchronous")) {
-        qos.publish_mode().kind = PublishModeQosPolicyKind::ASYNCHRONOUS_PUBLISH_MODE;
+        qos.publish_mode().kind =
+                PublishModeQosPolicyKind::ASYNCHRONOUS_PUBLISH_MODE;
     }
 
     // TIMES
@@ -737,8 +832,10 @@ bool FastDDSImpl<T>::configure_writer_qos(
 
     // RESOURCE LIMITS
     if (qosProfile == "ThroughputQos") {
-        qos.resource_limits().allocated_samples = _PM->get<int>("sendQueueSize");
-        qos.resource_limits().max_samples = _PM->get<int>("sendQueueSize"); //0 is Length unlimited.
+        qos.resource_limits().allocated_samples =
+                _PM->get<int>("sendQueueSize");
+        qos.resource_limits().max_samples =
+                _PM->get<int>("sendQueueSize");  // 0 is Length unlimited.
         if (_PM->get<bool>("keyed")) {
             qos.resource_limits().max_instances = _PM->get<long>("instances");
             qos.resource_limits().max_samples_per_instance = 0;
@@ -768,40 +865,28 @@ bool FastDDSImpl<T>::configure_writer_qos(
     if (_PM->get<bool>("showResourceLimits")) {
         std::ostringstream stringStream;
 
-        stringStream << "Resource Limits DW (" 
-                    << qosProfile
-                    << " topic):\n"
-                    << "\tSamples (Allocated/Max): "
-                    << qos.resource_limits().allocated_samples
-                    << "/"
-                    << qos.resource_limits().max_samples
-                    << "\n";
+        stringStream << "Resource Limits DW (" << qosProfile << " topic):\n"
+                     << "\tSamples (Allocated/Max): "
+                     << qos.resource_limits().allocated_samples << "/"
+                     << qos.resource_limits().max_samples << "\n";
 
         if (_PM->get<bool>("keyed")) {
             stringStream << "\tInstances (Max): "
-                        << qos.resource_limits().max_instances
-                        << "\n";
+                         << qos.resource_limits().max_instances << "\n";
             stringStream << "\tMax Samples per Instance: "
-                        << qos.resource_limits().max_samples_per_instance
-                        << "\n";
-
+                         << qos.resource_limits().max_samples_per_instance
+                         << "\n";
         }
-            stringStream << "\tHeartbeat period (s/ns): "
-                        << qos.reliable_writer_qos().times.heartbeatPeriod.seconds
-                        << ","
-                        << qos.reliable_writer_qos().times.heartbeatPeriod.nanosec
-                        << "\n";
-            stringStream << "\tDurability is: "
-                        << qos.durability().kind
-                        << "\n";
-            stringStream << "\tReliability is: "
-                        << qos.reliability().kind
-                        << "\n";
-            stringStream << "\tMax blocking time is (s/ns): "
-                        << qos.reliability().max_blocking_time.seconds
-                        << ","
-                        << qos.reliability().max_blocking_time.nanosec
-                        << "\n";
+        stringStream << "\tHeartbeat period (s/ns): "
+                     << qos.reliable_writer_qos().times.heartbeatPeriod.seconds
+                     << ","
+                     << qos.reliable_writer_qos().times.heartbeatPeriod.nanosec
+                     << "\n";
+        stringStream << "\tDurability is: " << qos.durability().kind << "\n";
+        stringStream << "\tReliability is: " << qos.reliability().kind << "\n";
+        stringStream << "\tMax blocking time is (s/ns): "
+                     << qos.reliability().max_blocking_time.seconds << ","
+                     << qos.reliability().max_blocking_time.nanosec << "\n";
         fprintf(stderr, "%s\n", stringStream.str().c_str());
     }
     return true;
@@ -816,21 +901,21 @@ bool FastDDSImpl<T>::configure_reader_qos(
         DataReaderQos &qos,
         std::string qosProfile)
 {
-
     if (_PM->get<bool>("unbounded")) {
         qos.endpoint().history_memory_policy = DYNAMIC_RESERVE_MEMORY_MODE;
     }
 
     if (qosProfile != "AnnouncementQos") {
-
         if (_PM->get<bool>("bestEffort")) {
-            qos.reliability().kind = ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS;
+            qos.reliability().kind =
+                    ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS;
         } else {
-            qos.reliability().kind = ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
+            qos.reliability().kind =
+                    ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
             qos.reliability().max_blocking_time = c_TimeInfinite;
         }
 
-        if (_PM->get<bool>("noPositiveAcks")){
+        if (_PM->get<bool>("noPositiveAcks")) {
             qos.reliable_reader_qos().disable_positive_ACKs.enabled = true;
             if (_PM->is_set("keepDurationUsec")) {
                 qos.reliable_reader_qos().disable_positive_ACKs.duration =
@@ -841,13 +926,17 @@ bool FastDDSImpl<T>::configure_reader_qos(
         }
 
         if (_PM->is_set("durability")) {
-            qos.durability().kind =(DurabilityQosPolicyKind)_PM->get<int>("durability");
+            qos.durability().kind =
+                    (DurabilityQosPolicyKind) _PM->get<int>("durability");
         } else {
-            qos.durability().kind = DurabilityQosPolicyKind::VOLATILE_DURABILITY_QOS;
+            qos.durability().kind =
+                    DurabilityQosPolicyKind::VOLATILE_DURABILITY_QOS;
         }
-    } else { // AnnouncementQoS
-        qos.reliability().kind = ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
-        qos.durability().kind = DurabilityQosPolicyKind::TRANSIENT_LOCAL_DURABILITY_QOS;
+    } else {  // AnnouncementQoS
+        qos.reliability().kind =
+                ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS;
+        qos.durability().kind =
+                DurabilityQosPolicyKind::TRANSIENT_LOCAL_DURABILITY_QOS;
     }
 
     // HISTORY
@@ -867,7 +956,8 @@ bool FastDDSImpl<T>::configure_reader_qos(
     if (qosProfile == "ThroughputQos") {
         qos.resource_limits().allocated_samples = 128;
         if (_PM->is_set("receiveQueueSize")) {
-            qos.resource_limits().allocated_samples = _PM->get<int>("receiveQueueSize");
+            qos.resource_limits().allocated_samples =
+                    _PM->get<int>("receiveQueueSize");
         }
         qos.resource_limits().max_samples = 10000;
         if (_PM->get<bool>("keyed")) {
@@ -902,30 +992,20 @@ bool FastDDSImpl<T>::configure_reader_qos(
     if (_PM->get<bool>("showResourceLimits")) {
         std::ostringstream stringStream;
 
-        stringStream << "Resource Limits DR (" 
-                    << qosProfile
-                    << " topic):\n"
-                    << "\tSamples (Allocated/Max): "
-                    << qos.resource_limits().allocated_samples
-                    << "/"
-                    << qos.resource_limits().max_samples
-                    << "\n";
+        stringStream << "Resource Limits DR (" << qosProfile << " topic):\n"
+                     << "\tSamples (Allocated/Max): "
+                     << qos.resource_limits().allocated_samples << "/"
+                     << qos.resource_limits().max_samples << "\n";
 
-        if (_PM->get<bool>("keyed")){
+        if (_PM->get<bool>("keyed")) {
             stringStream << "\tInstances (Max): "
-                        << qos.resource_limits().max_instances
-                        << "\n";
+                         << qos.resource_limits().max_instances << "\n";
             stringStream << "\tMax Samples per Instance: "
-                        << qos.resource_limits().max_samples_per_instance
-                        << "\n";
-
+                         << qos.resource_limits().max_samples_per_instance
+                         << "\n";
         }
-        stringStream << "\tDurability is: "
-                    << qos.durability().kind
-                    << "\n";
-        stringStream << "\tReliability is: "
-                    << qos.reliability().kind
-                    << "\n";
+        stringStream << "\tDurability is: " << qos.durability().kind << "\n";
+        stringStream << "\tReliability is: " << qos.reliability().kind << "\n";
         fprintf(stderr, "%s\n", stringStream.str().c_str());
     }
 
@@ -941,6 +1021,7 @@ bool FastDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
     // Assign ParameterManager
     _PM = &PM;
     _transport.initialize(_PM);
+    _security.initialize(_PM);
     ReturnCode_t retCode = ReturnCode_t::RETCODE_OK;
 
     if (!validate_input()) {
@@ -951,9 +1032,8 @@ bool FastDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
      * Only if we run the latency test we need to wait
      * for pongs after sending pings
      */
-    _pongSemaphore = _PM->get<bool>("latencyTest")
-            ? PerftestSemaphore_new()
-            : nullptr;
+    _pongSemaphore =
+            _PM->get<bool>("latencyTest") ? PerftestSemaphore_new() : nullptr;
 
     _factory = DomainParticipantFactory::get_instance();
 
@@ -965,7 +1045,7 @@ bool FastDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
     StatusMask statusMask = StatusMask::inconsistent_topic();
     statusMask << StatusMask::offered_incompatible_qos();
     statusMask << StatusMask::requested_incompatible_qos();
-    
+
     // Creates the participant
     _participant = _factory->create_participant(
             _PM->get<int>("domain"),
@@ -973,14 +1053,14 @@ bool FastDDSImpl<T>::initialize(ParameterManager &PM, perftest_cpp *parent)
             new ParticipantListener(),
             statusMask);
     if (_participant == nullptr) {
-        fprintf(stderr,"Problem creating participant.\n");
+        fprintf(stderr, "Problem creating participant.\n");
         return false;
     }
 
     // Register type
     retCode = _type.register_type(_participant);
     if (retCode != ReturnCode_t::RETCODE_OK) {
-        fprintf(stderr,"Problem registering type.\n");
+        fprintf(stderr, "Problem registering type.\n");
         return false;
     }
 
@@ -1048,7 +1128,8 @@ IMessagingWriter *FastDDSImpl<T>::create_writer(const char *topicName)
     DataWriterQos dwQos;
     if (!configure_writer_qos(dwQos, qosProfile)) {
         fprintf(stderr,
-                "Problem creating additional QoS settings with %s profile.\n",
+                "Problem creating additional QoS settings with %s "
+                "profile.\n",
                 qosProfile.c_str());
         return nullptr;
     }
@@ -1099,7 +1180,10 @@ IMessagingReader *FastDDSImpl<T>::create_reader(
 
     DataReaderQos drQos;
     if (!configure_reader_qos(drQos, qosProfile)) {
-        fprintf(stderr, "Problem creating additional QoS settings with %s profile.\n", qosProfile.c_str());
+        fprintf(stderr,
+                "Problem creating additional QoS settings with %s "
+                "profile.\n",
+                qosProfile.c_str());
         return NULL;
     }
 
@@ -1142,5 +1226,5 @@ template class FastDDSImpl<TestDataKeyedLarge_tPubSubType>;
 template class FastDDSImpl<TestDataLarge_tPubSubType>;
 
 #if defined(RTI_WIN32) || defined(RTI_INTIME)
-  #pragma warning(pop)
+    #pragma warning(pop)
 #endif

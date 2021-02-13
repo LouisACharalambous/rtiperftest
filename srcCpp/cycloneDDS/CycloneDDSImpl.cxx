@@ -265,7 +265,7 @@ std::string CycloneDDSImpl<T>::print_configuration()
             }
         }
     }
-    if(_PM->is_set("enableSecurity")){
+    if (_PM->group_is_used(SECURE)) {
     stringStream << "\n" << _security.printSecurityConfigurationSummary();
     }
     return stringStream.str();
@@ -737,60 +737,71 @@ bool CycloneDDSImpl<T>::set_cycloneDDS_URI()
 
     //==========================================================================
     // Everything that goes under "<Security>"
-    if (_PM->is_set("enableSecurity")) {
-        if (_PM->is_set("pub")){
-        stringStream << "<Security>";
-        stringStream << "<Authentication>";
-        stringStream << "<Library initFunction=\"init_authentication\" "
-                        "finalizeFunction=\"finalize_authentication\" "
-                        "path=\"dds_security_auth\"/>";
-        stringStream
-                << "<IdentityCA>file:../../resource/secure/cacert.pem</IdentityCA>";
-         if(_PM->is_set("secureCertFile")) {stringStream << "<IdentityCertificate>file:"+ _PM->get<std::string>("secureCertFile");} else {stringStream << "<IdentityCertificate>file:../../resource/secure/pub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/pub.pem");}stringStream << "</IdentityCertificate>";
-         if(_PM->is_set("securePrivateKey")) {stringStream << "<PrivateKey>file:"+ _PM->get<std::string>("securePrivateKey");} else {stringStream << "<PrivateKey>file:../../resource/secure/pubkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/pubkey.pem");}stringStream << "</PrivateKey>";
-        stringStream << "</Authentication>";
-        stringStream << "<Cryptographic>";
-        stringStream << "<Library initFunction=\"init_crypto\" "
-                        "finalizeFunction=\"finalize_crypto\" "
-                        "path=\"dds_security_crypto\"/>";
-        stringStream << "</Cryptographic>";
-        stringStream << "<AccessControl>";
-        stringStream << "<Library initFunction=\"init_access_control\" "
-                        "finalizeFunction=\"finalize_access_control\" "
-                        "path=\"dds_security_ac\"/>";
-        if(_PM->is_set("secureCertAuthority")) {stringStream << "<PermissionsCA>file:"+ _PM->get<std::string>("secureCertAuthority");} else {stringStream << "<PermissionsCA>file:../../resource/secure/cacert.pem"; _PM->set<std::string>("secureCertAuthority", "./resource/secure/cacert.pem");}stringStream << "</PermissionsCA>";
-        if(_PM->is_set("secureGovernanceFile")) {stringStream << "<Governance>file:"+ _PM->get<std::string>("secureGovernanceFile");} else {stringStream << "<Governance>file:../../resource/secure/signed_PerftestGovernance_Sign.xml"; _PM->set<std::string>("secureGovernanceFile", "../../resource/secure/signed_PerftestGovernance_Sign.xml");}stringStream << "</Governance>";
-        if(_PM->is_set("securePermissionsFile")) {stringStream << "<Permissions>file:"+ _PM->get<std::string>("securePermissionsFile");} else {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsPub.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsPub.xml");}stringStream << "</Permissions>";
-        stringStream << "</AccessControl>";
-        stringStream << "</Security>";
-        }
-                else{
-        stringStream << "<Security>";
-        stringStream << "<Authentication>";
-        stringStream << "<Library initFunction=\"init_authentication\" "
-                        "finalizeFunction=\"finalize_authentication\" "
-                        "path=\"dds_security_auth\"/>";
-        stringStream
-                << "<IdentityCA>file:../../resource/secure/cacert.pem</IdentityCA>";
-         if(_PM->is_set("secureCertFile")) {stringStream << "<IdentityCertificate>file:"+ _PM->get<std::string>("secureCertFile");} else {stringStream << "<IdentityCertificate>file:../../resource/secure/sub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/sub.pem");}stringStream << "</IdentityCertificate>";
-         if(_PM->is_set("securePrivateKey")) {stringStream << "<PrivateKey>file:"+ _PM->get<std::string>("securePrivateKey");} else {stringStream << "<PrivateKey>file:../../resource/secure/subkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/subkey.pem");}stringStream << "</PrivateKey>";
-        stringStream << "</Authentication>";
-        stringStream << "<Cryptographic>";
-        stringStream << "<Library initFunction=\"init_crypto\" "
-                        "finalizeFunction=\"finalize_crypto\" "
-                        "path=\"dds_security_crypto\"/>";
-        stringStream << "</Cryptographic>";
-        stringStream << "<AccessControl>";
-        stringStream << "<Library initFunction=\"init_access_control\" "
-                        "finalizeFunction=\"finalize_access_control\" "
-                        "path=\"dds_security_ac\"/>";
-        if(_PM->is_set("secureCertAuthority")) {stringStream << "<PermissionsCA>file:"+ _PM->get<std::string>("secureCertAuthority");} else {stringStream << "<PermissionsCA>file:../../resource/secure/cacert.pem"; _PM->set<std::string>("secureCertAuthority", "../../resource/secure/cacert.pem");}stringStream << "</PermissionsCA>";
-        if(_PM->is_set("secureGovernanceFile")) {stringStream << "<Governance>file:"+ _PM->get<std::string>("secureGovernanceFile");} else {stringStream << "<Governance>file:../../resource/secure/signed_PerftestGovernance_Sign.xml"; _PM->set<std::string>("secureGovernanceFile", "../../resource/secure/signed_PerftestGovernance_Sign.xml");}stringStream << "</Governance>";
-        if(_PM->is_set("securePermissionsFile")) {stringStream << "<Permissions>file:"+ _PM->get<std::string>("securePermissionsFile");} else {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsSub.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsSub.xml");}stringStream << "</Permissions>";
-        stringStream << "</AccessControl>";
-        stringStream << "</Security>";
-        }
+
+    
+    bool USE_SECURITY = false;
+    std::string govFile = "../../resource/secure/signed_PerftestGovernance_";
+
+
+    if (_PM->is_set("secureEncryptDiscovery")){
+        USE_SECURITY = true;
+        govFile = govFile + "Discovery";
     }
+
+    if (_PM->is_set("secureSign")){
+        USE_SECURITY = true;
+        govFile = govFile + "Sign";
+    }
+
+    if (_PM->is_set("secureEncryptBoth")){
+        USE_SECURITY = true;
+        govFile = govFile + "EncryptBoth";
+    }
+
+    if (_PM->is_set("secureEncryptSM")){
+        USE_SECURITY = true;
+        govFile = govFile + "EncryptSubmessage";
+    }
+
+    if (_PM->is_set("secureEncryptData")){
+        USE_SECURITY = true;
+        govFile = govFile + "EncryptData";
+    }
+
+    if ( USE_SECURITY ) {
+        govFile = govFile + ".xml";
+        stringStream << "<Security>";
+        stringStream << "<Authentication>";
+        stringStream << "<Library initFunction=\"init_authentication\" ""finalizeFunction=\"finalize_authentication\" ""path=\"dds_security_auth\"/>";
+        stringStream << "<IdentityCA>file:../../resource/secure/cacert.pem</IdentityCA>";
+         if(_PM->is_set("secureCertFile")) {stringStream << "<IdentityCertificate>file:"+ _PM->get<std::string>("secureCertFile");} 
+            else if (_PM->is_set("pub")){stringStream << "<IdentityCertificate>file:../../resource/secure/pub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/pub.pem");}
+            else if (_PM->is_set("sub")){stringStream << "<IdentityCertificate>file:../../resource/secure/sub.pem"; _PM->set<std::string>("secureCertFile", "../../resource/secure/sub.pem");}
+        stringStream << "</IdentityCertificate>";
+         if(_PM->is_set("securePrivateKey")) {stringStream << "<PrivateKey>file:"+ _PM->get<std::string>("securePrivateKey");}
+            else if (_PM->is_set("pub")) {stringStream << "<PrivateKey>file:../../resource/secure/pubkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/pubkey.pem");}
+            else if (_PM->is_set("sub")) {stringStream << "<PrivateKey>file:../../resource/secure/subkey.pem"; _PM->set<std::string>("securePrivateKey", "../../resource/secure/subkey.pem");}
+        stringStream << "</PrivateKey>";
+        stringStream << "</Authentication>";
+        stringStream << "<Cryptographic>";
+        stringStream << "<Library initFunction=\"init_crypto\" " "finalizeFunction=\"finalize_crypto\" ""path=\"dds_security_crypto\"/>";
+        stringStream << "</Cryptographic>";
+        stringStream << "<AccessControl>";
+        stringStream << "<Library initFunction=\"init_access_control\" ""finalizeFunction=\"finalize_access_control\" ""path=\"dds_security_ac\"/>";
+        if(_PM->is_set("secureCertAuthority")) {stringStream << "<PermissionsCA>file:"+ _PM->get<std::string>("secureCertAuthority");}
+            else {stringStream << "<PermissionsCA>file:../../resource/secure/cacert.pem"; _PM->set<std::string>("secureCertAuthority", "./resource/secure/cacert.pem");}
+        stringStream << "</PermissionsCA>";
+        if(_PM->is_set("secureGovernanceFile")) {stringStream << "<Governance>file:"+ _PM->get<std::string>("secureGovernanceFile");} 
+            else {stringStream << "<Governance>file:"+govFile; _PM->set<std::string>("secureGovernanceFile", govFile);}
+        stringStream << "</Governance>";
+        if(_PM->is_set("securePermissionsFile")) {stringStream << "<Permissions>file:"+ _PM->get<std::string>("securePermissionsFile");} 
+            else if (_PM->is_set("pub")) {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsPubCyclone.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsPubCyclone.xml");}
+            else if (_PM->is_set("sub")) {stringStream << "<Permissions>file:../../resource/secure/signed_PerftestPermissionsSubCyclone.xml"; _PM->set<std::string>("securePermissionsFile", "../../resource/secure/signed_PerftestPermissionsSubCyclone.xml");}
+        stringStream << "</Permissions>";
+        stringStream << "</AccessControl>";
+        stringStream << "</Security>";
+        _PM->set<std::string>("secureLibrary", "dds_security_ac");
+        }
 
     //==========================================================================
     // Everything that goes under "<Sizing>"

@@ -521,27 +521,6 @@ void ParameterManager::initialize()
     enableBatching->set_supported_middleware(Middleware::CYCLONEDDS);
     create("enableBatching", enableBatching);
 
-    Parameter<bool> *enableAuthentication = new Parameter<bool>(false);
-    enableAuthentication->set_command_line_argument("-enableAuthentication", "");
-    enableAuthentication->set_description(
-            "Enables Authentication in CycloneDDS.");
-    enableAuthentication->set_type(T_BOOL);
-    enableAuthentication->set_extra_argument(NO);
-    enableAuthentication->set_group(GENERAL);
-    enableAuthentication->set_supported_middleware(Middleware::CYCLONEDDS);
-    create("enableAuthentication", enableAuthentication);
-
-    Parameter<bool> *enableSecurity = new Parameter<bool>(false);
-    enableSecurity->set_command_line_argument("-enableSecurity", "");
-    enableSecurity->set_description(
-            "Enables all Security in CycloneDDS.");
-    enableSecurity->set_type(T_BOOL);
-    enableSecurity->set_extra_argument(NO);
-    enableSecurity->set_group(GENERAL);
-    enableSecurity->set_supported_middleware(Middleware::CYCLONEDDS);
-    create("enableSecurity", enableSecurity);
-
-
     Parameter<bool> *enableAutoThrottle = new Parameter<bool>(false);
     enableAutoThrottle->set_command_line_argument("-enableAutoThrottle", "");
     enableAutoThrottle->set_description(
@@ -1252,7 +1231,7 @@ void ParameterManager::initialize()
 
     ////////////////////////////////////////////////////////////////////////////
     // SECURE PARAMETER:
-  #if defined (RTI_SECURE_PERFTEST) | defined (PERFTEST_CYCLONEDDS)
+  #if defined (RTI_SECURE_PERFTEST) | defined (PERFTEST_CYCLONEDDS) | defined (PERFTEST_EPROSIMA_FASTDDS)
     Parameter<bool> *secureEncryptDiscovery = new Parameter<bool>(false);
     secureEncryptDiscovery->set_command_line_argument(
             "-secureEncryptDiscovery", "");
@@ -1263,6 +1242,7 @@ void ParameterManager::initialize()
     secureEncryptDiscovery->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptDiscovery",  secureEncryptDiscovery);
 
@@ -1275,6 +1255,7 @@ void ParameterManager::initialize()
     secureSign->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureSign", secureSign);
 
@@ -1287,6 +1268,7 @@ void ParameterManager::initialize()
     secureEncryptBoth->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptBoth", secureEncryptBoth);
 
@@ -1299,6 +1281,7 @@ void ParameterManager::initialize()
     secureEncryptData->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptData", secureEncryptData);
 
@@ -1311,6 +1294,7 @@ void ParameterManager::initialize()
     secureEncryptSM->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureEncryptSM", secureEncryptSM);
 
@@ -1328,6 +1312,7 @@ void ParameterManager::initialize()
     secureGovernanceFile->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureGovernanceFile", secureGovernanceFile);
 
@@ -1343,6 +1328,7 @@ void ParameterManager::initialize()
     securePermissionsFile->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("securePermissionsFile", securePermissionsFile);
 
@@ -1358,6 +1344,7 @@ void ParameterManager::initialize()
     secureCertAuthority->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureCertAuthority", secureCertAuthority);
 
@@ -1372,6 +1359,7 @@ void ParameterManager::initialize()
     secureCertFile->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureCertFile", secureCertFile);
 
@@ -1386,6 +1374,7 @@ void ParameterManager::initialize()
     securePrivateKey->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("securePrivateKey", securePrivateKey);
 
@@ -1400,6 +1389,7 @@ void ParameterManager::initialize()
     secureLibrary->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     create("secureLibrary", secureLibrary);
 
@@ -1412,6 +1402,7 @@ void ParameterManager::initialize()
     secureDebug->set_supported_middleware(
             Middleware::RTIDDSPRO
             | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS
             | Middleware::RTIDDSMICRO);
     secureDebug->set_internal(true);
     create("secureDebug", secureDebug);
@@ -1616,7 +1607,7 @@ std::string ParameterManager::display_help()
                 output[static_cast<Group>(i)] +=
                         get_center_header_help_line("TRANSPORT");
                 break;
-          #if defined (RTI_SECURE_PERFTEST) | (PERFTEST_CYCLONEDDS)
+          #if defined (RTI_SECURE_PERFTEST) | (PERFTEST_CYCLONEDDS) | (PERFTEST_EPROSIMA_FASTDDS)
             case SECURE:
                 output[static_cast<Group>(i)] +=
                         get_center_header_help_line("SECURE");

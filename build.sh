@@ -1326,6 +1326,8 @@ function build_fastDDS_cpp()
 
     echo ""
     echo -e "${INFO_TAG} Compilation successful"
+    rm -rf fastDDS_build
+    clean
 }
 
 
@@ -1378,6 +1380,8 @@ function build_cycloneDDS_cpp()
 
     echo ""
     echo -e "${INFO_TAG} Compilation successful"
+    rm -rf cycloneDDS_build
+    clean
 }
 
 ################################################################################

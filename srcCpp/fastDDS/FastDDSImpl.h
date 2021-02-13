@@ -12,6 +12,7 @@
 #include "MessagingIF.h"
 #include "PerftestTransport.h"
 #include <algorithm>
+#include "../connextDDS/PerftestSecurity.h"
 #include <map>
 #include <stdexcept>  // This header is part of the error handling library.
 #include <string>
@@ -102,6 +103,7 @@ protected:
     perftest_cpp *_parent;
     ParameterManager *_PM;
     PerftestTransport _transport;
+    PerftestSecurity _security;
     PerftestSemaphore *_pongSemaphore;
     std::map<std::string, std::string> _qoSProfileNameMap;
 
