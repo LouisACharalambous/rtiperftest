@@ -1797,7 +1797,7 @@ public:
         }
         else {
             if (printIntervals) {
-                latency_ave = (double)latency_sum / (double)count;
+                latency_ave = latency;
                 latency_std = sqrt(
                         (double)latency_sum_square / (double)count - (latency_ave * latency_ave));
 

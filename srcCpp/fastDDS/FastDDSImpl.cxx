@@ -379,7 +379,6 @@ public:
             return;
         }
         while (listener->_matchedSubscribers < numSubscribers) {
-            PerftestClock::milliSleep(PERFTEST_DISCOVERY_TIME_MSEC);
         }
     }
 
@@ -543,7 +542,6 @@ public:
             return;
         }
         while (listener->_matchedPublishers < numPublishers) {
-            PerftestClock::milliSleep(PERFTEST_DISCOVERY_TIME_MSEC);
         }
     }
 

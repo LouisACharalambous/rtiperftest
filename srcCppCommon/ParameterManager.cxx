@@ -13,7 +13,8 @@ ParameterManager::ParameterManager() : middleware(Middleware::RTIDDSPRO)
 {
 }
 
-ParameterManager::ParameterManager(MiddlewareMask middleware) : middleware(middleware)
+ParameterManager::ParameterManager(MiddlewareMask middleware)
+        : middleware(middleware)
 {
 }
 
@@ -28,7 +29,16 @@ void ParameterManager::initialize()
     bestEffort->set_extra_argument(NO);
     bestEffort->set_group(GENERAL);
     bestEffort->set_supported_middleware(Middleware::ALLDDS);
-    create("bestEffort",  bestEffort);
+    create("bestEffort", bestEffort);
+
+    Parameter<bool> *reliable = new Parameter<bool>(false);
+    reliable->set_command_line_argument("-reliable", "");
+    reliable->set_description("Run test in reliable mode. Default: reliable");
+    reliable->set_type(T_BOOL);
+    reliable->set_extra_argument(NO);
+    reliable->set_group(GENERAL);
+    reliable->set_supported_middleware(Middleware::ALLDDS);
+    create("reliable", reliable);
 
     Parameter<unsigned long long> *dataLen =
             new Parameter<unsigned long long>(100);
@@ -75,7 +85,9 @@ void ParameterManager::initialize()
     durability->set_type(T_NUMERIC_D);
     durability->set_extra_argument(YES);
     durability->set_group(GENERAL);
-    durability->set_supported_middleware(Middleware::RTIDDS);
+    durability->set_supported_middleware(
+            Middleware::RTIDDSPRO | Middleware::EPROSIMAFASTDDS
+            | Middleware::CYCLONEDDS);
     durability->set_range(0, 3);
     create("durability", durability);
 
@@ -88,8 +100,7 @@ void ParameterManager::initialize()
     keepLast->set_type(T_BOOL);
     keepLast->set_group(GENERAL);
     keepLast->set_supported_middleware(
-            Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS);
+            Middleware::CYCLONEDDS | Middleware::EPROSIMAFASTDDS);
     create("keepLast", keepLast);
 
     Parameter<int> *keepLastDepth = new Parameter<int>(50);
@@ -102,8 +113,7 @@ void ParameterManager::initialize()
     keepLastDepth->set_extra_argument(YES);
     keepLastDepth->set_group(GENERAL);
     keepLastDepth->set_supported_middleware(
-            Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS);
+            Middleware::CYCLONEDDS | Middleware::EPROSIMAFASTDDS);
     keepLastDepth->set_range(0, INT_MAX);
     create("keepLastDepth", keepLastDepth);
 
@@ -131,7 +141,8 @@ void ParameterManager::initialize()
 
     Parameter<long> *instanceHashBuckets = new Parameter<long>(0);
     instanceHashBuckets->set_command_line_argument(
-            "-instanceHashBuckets", "<count>");
+            "-instanceHashBuckets",
+            "<count>");
     instanceHashBuckets->set_internal(true);
     instanceHashBuckets->set_type(T_NUMERIC_LD);
     instanceHashBuckets->set_extra_argument(YES);
@@ -151,7 +162,8 @@ void ParameterManager::initialize()
 
     Parameter<bool> *noDirectCommunication = new Parameter<bool>(false);
     noDirectCommunication->set_command_line_argument(
-            "-noDirectCommunication", "");
+            "-noDirectCommunication",
+            "");
     noDirectCommunication->set_description(
             "Use brokered mode for persistent durability");
     noDirectCommunication->set_type(T_BOOL);
@@ -179,9 +191,10 @@ void ParameterManager::initialize()
     keepDurationUsec->set_extra_argument(YES);
     keepDurationUsec->set_group(GENERAL);
     keepDurationUsec->set_supported_middleware(Middleware::RTIDDSPRO);
-    keepDurationUsec->set_range(1,
-                (unsigned long long)365 * 24 * 60 * 60 * 1000000);
-                // One year in usec
+    keepDurationUsec->set_range(
+            1,
+            (unsigned long long) 365 * 24 * 60 * 60 * 1000000);
+    // One year in usec
     create("keepDurationUsec", keepDurationUsec);
 
     Parameter<bool> *noPrintIntervals = new Parameter<bool>(false);
@@ -254,7 +267,9 @@ void ParameterManager::initialize()
     create("waitsetDelayUsec", waitsetDelayUsec);
 
     Parameter<long> *waitsetEventCount = new Parameter<long>(5);
-    waitsetEventCount->set_command_line_argument("-waitsetEventCount", "<count>");
+    waitsetEventCount->set_command_line_argument(
+            "-waitsetEventCount",
+            "<count>");
     waitsetEventCount->set_description(
             "UseReadThread related. Allows you to\n"
             "process incoming data in groups, based on the\n"
@@ -274,14 +289,14 @@ void ParameterManager::initialize()
     asynchronous->set_extra_argument(NO);
     asynchronous->set_group(GENERAL);
     asynchronous->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::EPROSIMAFASTDDS
+            Middleware::RTIDDSPRO | Middleware::EPROSIMAFASTDDS
             | Middleware::CYCLONEDDS);
     create("asynchronous", asynchronous);
 
     Parameter<bool> *asynchronousReceive = new Parameter<bool>(false);
     asynchronousReceive->set_command_line_argument("-asynchronousReceive", "");
-    asynchronousReceive->set_description("Use asynchronous receive settings.\nDefault: Not set");
+    asynchronousReceive->set_description(
+            "Use asynchronous receive settings.\nDefault: Not set");
     asynchronousReceive->set_type(T_BOOL);
     asynchronousReceive->set_extra_argument(NO);
     asynchronousReceive->set_group(GENERAL);
@@ -289,15 +304,19 @@ void ParameterManager::initialize()
     create("asynchronousReceive", asynchronousReceive);
 
     Parameter<bool> *printCycloneDdsUriXml = new Parameter<bool>(false);
-    printCycloneDdsUriXml->set_command_line_argument("-printCycloneDdsUriXml", "");
-    printCycloneDdsUriXml->set_description("Print the CYCLONEDDS_URI content.\nDefault: Not used");
+    printCycloneDdsUriXml->set_command_line_argument(
+            "-printCycloneDdsUriXml",
+            "");
+    printCycloneDdsUriXml->set_description(
+            "Print the CYCLONEDDS_URI content.\nDefault: Not used");
     printCycloneDdsUriXml->set_type(T_BOOL);
     printCycloneDdsUriXml->set_extra_argument(NO);
     printCycloneDdsUriXml->set_group(GENERAL);
     printCycloneDdsUriXml->set_supported_middleware(Middleware::CYCLONEDDS);
     create("printCycloneDdsUriXml", printCycloneDdsUriXml);
 
-    Parameter<std::string> *flowController = new Parameter<std::string>("default");
+    Parameter<std::string> *flowController =
+            new Parameter<std::string>("default");
     flowController->set_command_line_argument("-flowController", "<flow>");
     flowController->set_description(
             "In the case asynchronous writer use a specific flow controller.\n"
@@ -324,17 +343,19 @@ void ParameterManager::initialize()
     create("cpu", cpu);
 
     Parameter<int> *unbounded = new Parameter<int>(0);
-    unbounded->set_command_line_argument("-unbounded", "<allocation_threshold>");
+    unbounded->set_command_line_argument(
+            "-unbounded",
+            "<allocation_threshold>");
     unbounded->set_description(
             "Use unbounded Sequences\n"
-            "<allocation_threshold> is optional. Default: MAX_BOUNDED_SEQ_SIZE Bytes");
+            "<allocation_threshold> is optional. Default: MAX_BOUNDED_SEQ_SIZE "
+            "Bytes");
     unbounded->set_type(T_NUMERIC_D);
     unbounded->set_extra_argument(POSSIBLE);
     unbounded->set_range(perftest_cpp::OVERHEAD_BYTES, MAX_BOUNDED_SEQ_SIZE);
     unbounded->set_group(GENERAL);
     unbounded->set_supported_middleware(
-        Middleware::RTIDDSPRO 
-        | Middleware::EPROSIMAFASTDDS);
+            Middleware::RTIDDSPRO | Middleware::EPROSIMAFASTDDS);
     create("unbounded", unbounded);
 
     Parameter<std::string> *threadPriorities = new Parameter<std::string>("");
@@ -353,8 +374,7 @@ void ParameterManager::initialize()
     threadPriorities->set_extra_argument(YES);
     threadPriorities->set_group(GENERAL);
     threadPriorities->set_supported_middleware(
-            Middleware::RTIDDS
-            | Middleware::RAWTRANSPORT);
+            Middleware::RTIDDS | Middleware::RAWTRANSPORT);
     create("threadPriorities", threadPriorities);
 
     Parameter<std::string> *outputFormat = new Parameter<std::string>("csv");
@@ -387,7 +407,7 @@ void ParameterManager::initialize()
     noOutputHeaders->set_supported_middleware(Middleware::ALL);
     create("noOutputHeaders", noOutputHeaders);
 
-  #ifdef RTI_FLATDATA_AVAILABLE
+#ifdef RTI_FLATDATA_AVAILABLE
     Parameter<bool> *flatData = new Parameter<bool>(false);
     flatData->set_command_line_argument("-flatData", "");
     flatData->set_description(
@@ -402,7 +422,8 @@ void ParameterManager::initialize()
     Parameter<bool> *zerocopy = new Parameter<bool>(false);
     zerocopy->set_command_line_argument("-zeroCopy", "");
     zerocopy->set_description(
-            "Use Zero Copy transfer mode. FlatData must be used too\nDefault: Not set");
+            "Use Zero Copy transfer mode. FlatData must be used too\nDefault: "
+            "Not set");
     zerocopy->set_type(T_BOOL);
     zerocopy->set_extra_argument(NO);
     zerocopy->set_group(GENERAL);
@@ -412,37 +433,42 @@ void ParameterManager::initialize()
     Parameter<bool> *checkconsistency = new Parameter<bool>(false);
     checkconsistency->set_command_line_argument("-checkConsistency", "");
     checkconsistency->set_description(
-            "Check if samples sent with Zero Copy are consistent\nDefault: Not set");
+            "Check if samples sent with Zero Copy are consistent\nDefault: Not "
+            "set");
     checkconsistency->set_type(T_BOOL);
     checkconsistency->set_extra_argument(NO);
     checkconsistency->set_group(GENERAL);
     checkconsistency->set_supported_middleware(Middleware::RTIDDSPRO);
     create("checkconsistency", checkconsistency);
     #endif
-  #endif
+#endif
 
-  Parameter<bool> *preallocateFragmentation = new Parameter<bool>(false);
-    preallocateFragmentation->set_command_line_argument("-preallocateFragmentedSamples", "");
+    Parameter<bool> *preallocateFragmentation = new Parameter<bool>(false);
+    preallocateFragmentation->set_command_line_argument(
+            "-preallocateFragmentedSamples",
+            "");
     preallocateFragmentation->set_description(
-            "Prevent dynamic allocation of buffer used for storing received fragments\nUseful for data bigger than 5MB\nDefault: Not set");
+            "Prevent dynamic allocation of buffer used for storing received "
+            "fragments\nUseful for data bigger than 5MB\nDefault: Not set");
     preallocateFragmentation->set_type(T_BOOL);
     preallocateFragmentation->set_extra_argument(NO);
     preallocateFragmentation->set_group(GENERAL);
     preallocateFragmentation->set_supported_middleware(Middleware::RTIDDSPRO);
     create("preallocateFragmentedSamples", preallocateFragmentation);
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     Parameter<bool> *useLegacyDynamicData = new Parameter<bool>(false);
-    useLegacyDynamicData->set_command_line_argument("-useLegacyDynamicData", "");
+    useLegacyDynamicData->set_command_line_argument(
+            "-useLegacyDynamicData",
+            "");
     useLegacyDynamicData->set_description(
             "Use the Legacy Dynamic Data implementation");
     useLegacyDynamicData->set_type(T_BOOL);
     useLegacyDynamicData->set_extra_argument(NO);
     useLegacyDynamicData->set_group(GENERAL);
-    useLegacyDynamicData->set_supported_middleware(
-            Middleware::RTIDDSPRO);
+    useLegacyDynamicData->set_supported_middleware(Middleware::RTIDDSPRO);
     create("useLegacyDynamicData", useLegacyDynamicData);
-  #endif
+#endif
 
     Parameter<int> *sendQueueSize = new Parameter<int>(50);
     sendQueueSize->set_command_line_argument("-sendQueueSize", "<number>");
@@ -457,9 +483,12 @@ void ParameterManager::initialize()
     create("sendQueueSize", sendQueueSize);
 
     Parameter<int> *receiveQueueSize = new Parameter<int>(128);
-    receiveQueueSize->set_command_line_argument("-receiveQueueSize", "<number>");
+    receiveQueueSize->set_command_line_argument(
+            "-receiveQueueSize",
+            "<number>");
     receiveQueueSize->set_description(
-            "Sets number of samples (or batches) in receive\nqueue. Default: 128");
+            "Sets number of samples (or batches) in receive\nqueue. Default: "
+            "128");
     receiveQueueSize->set_type(T_NUMERIC_D);
     receiveQueueSize->set_extra_argument(YES);
     receiveQueueSize->set_group(GENERAL);
@@ -478,22 +507,23 @@ void ParameterManager::initialize()
     showResourceLimits->set_supported_middleware(Middleware::ALL);
     create("showResourceLimits", showResourceLimits);
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     Parameter<bool> *cacheStats = new Parameter<bool>(false);
     cacheStats->set_command_line_argument("-cacheStats", "");
     cacheStats->set_description(
             "Display the reader/writer queue sample count and count_peak.\n"
-            "In the Writer side, also display the Pulled Sample count stats for\n"
+            "In the Writer side, also display the Pulled Sample count stats "
+            "for\n"
             "reliable protocol debugging purposes.\nDefault: Not set");
     cacheStats->set_type(T_BOOL);
     cacheStats->set_extra_argument(NO);
     receiveQueueSize->set_group(GENERAL);
     cacheStats->set_supported_middleware(Middleware::RTIDDSPRO);
     create("cacheStats", cacheStats);
-  #endif
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
-    //PUBLISHER PARAMETER
+    // PUBLISHER PARAMETER
 
     Parameter<long> *batchSize =
             new Parameter<long>(DEFAULT_THROUGHPUT_BATCH_SIZE);
@@ -506,15 +536,13 @@ void ParameterManager::initialize()
     batchSize->set_range(0, MAX_PERFTEST_SAMPLE_SIZE - 1);
     batchSize->set_group(PUB);
     batchSize->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT);
     create("batchSize", batchSize);
 
 
     Parameter<bool> *enableBatching = new Parameter<bool>(false);
     enableBatching->set_command_line_argument("-enableBatching", "");
-    enableBatching->set_description(
-            "Enables Batching in CycloneDDS.");
+    enableBatching->set_description("Enables Batching in CycloneDDS.");
     enableBatching->set_type(T_BOOL);
     enableBatching->set_extra_argument(NO);
     enableBatching->set_group(PUB);
@@ -550,10 +578,8 @@ void ParameterManager::initialize()
     pub->set_extra_argument(NO);
     pub->set_group(PUB);
     pub->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO
-            | Middleware::EPROSIMAFASTDDS);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::EPROSIMAFASTDDS);
     create("pub", pub);
 
     Parameter<unsigned long long> *latencyCount =
@@ -586,9 +612,10 @@ void ParameterManager::initialize()
     executionTime->set_supported_middleware(Middleware::ALL);
     create("executionTime", executionTime);
 
-    Parameter<long> *initialBurstSize =
-            new Parameter<long>(0);
-    initialBurstSize->set_command_line_argument("-initialBurstSize", "<samples>");
+    Parameter<long> *initialBurstSize = new Parameter<long>(0);
+    initialBurstSize->set_command_line_argument(
+            "-initialBurstSize",
+            "<samples>");
     initialBurstSize->set_description(
             "Set the initial burst size to initialize the queues.\n"
             "Default Calculated by RTI Perftest");
@@ -633,9 +660,9 @@ void ParameterManager::initialize()
     numSubscribers->set_range(1, INT_MAX);
     numSubscribers->set_group(PUB);
     numSubscribers->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::EPROSIMAFASTDDS
+            | Middleware::CYCLONEDDS);
     create("numSubscribers", numSubscribers);
 
     Parameter<int> *pidMultiPubTest = new Parameter<int>(0);
@@ -648,9 +675,9 @@ void ParameterManager::initialize()
     pidMultiPubTest->set_range(0, INT_MAX);
     pidMultiPubTest->set_group(PUB);
     pidMultiPubTest->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS);
     create("pidMultiPubTest", pidMultiPubTest);
 
     ParameterPair<unsigned long long, std::string> *pubRate =
@@ -689,7 +716,7 @@ void ParameterManager::initialize()
     create("pubRatebps", pubRatebps);
 #endif
 
-     std::vector<unsigned long long> scanList;
+    std::vector<unsigned long long> scanList;
     scanList.push_back(32);
     scanList.push_back(64);
     scanList.push_back(128);
@@ -724,8 +751,7 @@ void ParameterManager::initialize()
 
     Parameter<unsigned long long> *sleep = new Parameter<unsigned long long>(0);
     sleep->set_command_line_argument("-sleep", "<millisec>");
-    sleep->set_description(
-            "Time to sleep between each send. Default: 0");
+    sleep->set_description("Time to sleep between each send. Default: 0");
     sleep->set_type(T_NUMERIC_LLU);
     sleep->set_extra_argument(YES);
     sleep->set_range(1, MAX_ULLONG);
@@ -743,7 +769,7 @@ void ParameterManager::initialize()
     spin->set_supported_middleware(Middleware::ALL);
     create("spin", spin);
 
-  #ifndef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifndef RTI_LANGUAGE_CPP_TRADITIONAL
     Parameter<bool> *writerStats = new Parameter<bool>(false);
     writerStats->set_command_line_argument("-writerStats", "");
     writerStats->set_description(
@@ -753,12 +779,11 @@ void ParameterManager::initialize()
     writerStats->set_extra_argument(NO);
     writerStats->set_group(PUB);
     writerStats->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RTIDDSMICRO);
     create("writerStats", writerStats);
-  #endif
+#endif
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     Parameter<bool> *lowResolutionClock = new Parameter<bool>(false);
     lowResolutionClock->set_command_line_argument("-lowResolutionClock", "");
     lowResolutionClock->set_description(
@@ -774,13 +799,14 @@ void ParameterManager::initialize()
     lowResolutionClock->set_extra_argument(NO);
     lowResolutionClock->set_group(PUB);
     lowResolutionClock->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RTIDDSMICRO);
     create("lowResolutionClock", lowResolutionClock);
-  #endif
+#endif
 
-    Parameter<long> *writeInstance =
-            new Parameter<long>(-1); // (-1) By default use round-robin (-1)
+    Parameter<long> *writeInstance = new Parameter<long>(-1);  // (-1) By
+                                                               // default use
+                                                               // round-robin
+                                                               // (-1)
     writeInstance->set_command_line_argument("-writeInstance", "<instance>");
     writeInstance->set_description(
             "Set the instance number to be sent.\n"
@@ -791,12 +817,11 @@ void ParameterManager::initialize()
     writeInstance->set_range(0, LONG_MAX);
     writeInstance->set_group(PUB);
     writeInstance->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
             | Middleware::RTIDDSMICRO);
     create("writeInstance", writeInstance);
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     Parameter<bool> *serializationTime = new Parameter<bool>(false);
     serializationTime->set_command_line_argument("-showSerializationTime", "");
     serializationTime->set_description(
@@ -806,15 +831,13 @@ void ParameterManager::initialize()
     serializationTime->set_type(T_BOOL);
     serializationTime->set_extra_argument(NO);
     serializationTime->set_group(PUB);
-    serializationTime->set_supported_middleware(
-            Middleware::RTIDDSPRO);
+    serializationTime->set_supported_middleware(Middleware::RTIDDSPRO);
     create("serializationTime", serializationTime);
-  #endif
+#endif
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     /* This feature is still just available for Traditional C++ */
-    Parameter<std::string> *loadDataFromFile =
-            new Parameter<std::string>;
+    Parameter<std::string> *loadDataFromFile = new Parameter<std::string>;
     loadDataFromFile->set_command_line_argument("-loadDataFromFile", "<path>");
     loadDataFromFile->set_description(
             "Set the file used to populate the payload\n"
@@ -823,13 +846,12 @@ void ParameterManager::initialize()
     loadDataFromFile->set_extra_argument(YES);
     loadDataFromFile->set_group(PUB);
     loadDataFromFile->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
             | Middleware::RTIDDSMICRO);
     create("loadDataFromFile", loadDataFromFile);
 
-    Parameter<unsigned long long> *maximumAllocableBufferSize
-            = new Parameter<unsigned long long>(1073741824); // 1GB
+    Parameter<unsigned long long> *maximumAllocableBufferSize =
+            new Parameter<unsigned long long>(1073741824);  // 1GB
     maximumAllocableBufferSize->set_command_line_argument(
             "-maximumAllocableBufferSize",
             "<s>");
@@ -842,14 +864,13 @@ void ParameterManager::initialize()
     maximumAllocableBufferSize->set_range(1, MAX_ULLONG);
     maximumAllocableBufferSize->set_group(PUB);
     maximumAllocableBufferSize->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
             | Middleware::RTIDDSMICRO);
     create("maximumAllocableBufferSize", maximumAllocableBufferSize);
-  #endif
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
-    //SUBSCRIBER PARAMETER
+    // SUBSCRIBER PARAMETER
     Parameter<bool> *sub = new Parameter<bool>(false);
     sub->set_command_line_argument("-sub", "");
     sub->set_description("Set test to be a subscriber");
@@ -869,9 +890,9 @@ void ParameterManager::initialize()
     sidMultiSubTest->set_range(0, INT_MAX);
     sidMultiSubTest->set_group(SUB);
     sidMultiSubTest->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS);
     create("sidMultiSubTest", sidMultiSubTest);
 
     Parameter<int> *numPublishers = new Parameter<int>(1);
@@ -883,9 +904,9 @@ void ParameterManager::initialize()
     numPublishers->set_range(1, INT_MAX);
     numPublishers->set_group(SUB);
     numPublishers->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::EPROSIMAFASTDDS
+            | Middleware::CYCLONEDDS);
     create("numPublishers", numPublishers);
 
     ParameterVector<unsigned long long> *cft =
@@ -914,12 +935,12 @@ void ParameterManager::initialize()
             "packets. This will be the only address announced\n"
             "at discovery time. If not specified, use all"
             "available interfaces"
-          #ifdef PERFTEST_RTI_MICRO
+#ifdef PERFTEST_RTI_MICRO
             "\n"
             "When using RTI Connext DDS Micro, always specify the\n"
             "name, not the IP Address."
-          #endif
-            );
+#endif
+    );
     nic->set_type(T_STR);
     nic->set_extra_argument(YES);
     nic->set_group(TRANSPORT);
@@ -933,12 +954,12 @@ void ParameterManager::initialize()
             "packets. This will be the only address announced\n"
             "at discovery time. If not specified, use all"
             "available interfaces"
-          #ifdef PERFTEST_RTI_MICRO
+#ifdef PERFTEST_RTI_MICRO
             "\n"
             "When using RTI Connext DDS Micro, always specify the\n"
             "name, not the IP Address."
-          #endif
-            );
+#endif
+    );
     allowInterfaces->set_type(T_STR);
     allowInterfaces->set_extra_argument(YES);
     allowInterfaces->set_group(TRANSPORT);
@@ -957,10 +978,8 @@ void ParameterManager::initialize()
     peer->set_extra_argument(YES);
     peer->set_group(TRANSPORT);
     peer->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO
-            | Middleware::EPROSIMAFASTDDS);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::EPROSIMAFASTDDS);
     create("peer", peer);
 
     Parameter<std::string> *transport = new Parameter<std::string>("Use XML");
@@ -968,43 +987,43 @@ void ParameterManager::initialize()
     transport->set_description(
             "Set transport to be used. The rest of\n"
             "the transports will be disabled."
-          #if defined(PERFTEST_RTI_PRO)
-            "\nValues:\n\tUDPv4\n\tUDPv6\n\tSHMEM\n\tTCP\n\tTLS\n\tDTLS\n\tWAN\n\tUse XML\n"
+#if defined(PERFTEST_RTI_PRO)
+            "\nValues:"
+            "\n\tUDPv4\n\tUDPv6\n\tSHMEM\n\tTCP\n\tTLS\n\tDTLS\n\tWAN\n\tUse "
+            "XML\n"
             "Default: Use XML (UDPv4|SHMEM)"
-          #elif defined(PERFTEST_RTI_MICRO) || defined(PERFTEST_EPROSIMA_FASTDDS)
+#elif defined(PERFTEST_RTI_MICRO) || defined(PERFTEST_EPROSIMA_FASTDDS)
             "\nValues:\n\tUDPv4\n\tSHMEM\n"
             "Default: UDPv4"
-            #endif
-          #if defined(PERFTEST_CYCLONEDDS)
+#endif
+#if defined(PERFTEST_CYCLONEDDS)
             "\nValues:\n\tUDPv4\n\tUDPv6\n\tTCPv4\n\tTCPv6\n"
             "Default: UDPv4"
-          #endif
-          );
+#endif
+    );
     transport->set_type(T_STR);
     transport->set_extra_argument(YES);
     transport->set_group(TRANSPORT);
     transport->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO
-            | Middleware::CYCLONEDDS
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::CYCLONEDDS
             | Middleware::EPROSIMAFASTDDS);
     transport->add_valid_str_value("UDPv4");
-    #ifndef PERFTEST_CYCLONEDDS
+#ifndef PERFTEST_CYCLONEDDS
     transport->add_valid_str_value("SHMEM");
-    #endif
-  #if defined(PERFTEST_RTI_PRO)
+#endif
+#if defined(PERFTEST_RTI_PRO)
     transport->add_valid_str_value("UDPv6");
     transport->add_valid_str_value("TCP");
     transport->add_valid_str_value("TLS");
     transport->add_valid_str_value("DTLS");
     transport->add_valid_str_value("WAN");
-  #endif
-  #if defined(PERFTEST_CYCLONEDDS)
+#endif
+#if defined(PERFTEST_CYCLONEDDS)
     transport->add_valid_str_value("UDPv6");
     transport->add_valid_str_value("TCPv4");
     transport->add_valid_str_value("TCPv6");
-  #endif
+#endif
     create("transport", transport);
 
     Parameter<bool> *multicast = new Parameter<bool>(false);
@@ -1012,21 +1031,16 @@ void ParameterManager::initialize()
     std::ostringstream aux;
     aux << "Use multicast to send data. Each topic\n"
         << "will use a different address\n\tlatency: '"
-        << TRANSPORT_MULTICAST_ADDR_LATENCY
-        << "' \n\tthroughput: '"
-        << TRANSPORT_MULTICAST_ADDR_THROUGHPUT
-        << "'\n\tannouncement: '"
-        <<  TRANSPORT_MULTICAST_ADDR_ANNOUNCEMENT
-        << "'";
+        << TRANSPORT_MULTICAST_ADDR_LATENCY << "' \n\tthroughput: '"
+        << TRANSPORT_MULTICAST_ADDR_THROUGHPUT << "'\n\tannouncement: '"
+        << TRANSPORT_MULTICAST_ADDR_ANNOUNCEMENT << "'";
     multicast->set_description(aux.str());
     multicast->set_type(T_BOOL);
     multicast->set_extra_argument(NO);
     multicast->set_group(TRANSPORT);
     multicast->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT
-            | Middleware::RTIDDSMICRO
-            | Middleware::CYCLONEDDS);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT
+            | Middleware::RTIDDSMICRO | Middleware::CYCLONEDDS);
     create("multicast", multicast);
 
     Parameter<std::string> *multicastAddr = new Parameter<std::string>();
@@ -1046,13 +1060,13 @@ void ParameterManager::initialize()
     multicastAddr->set_extra_argument(YES);
     multicastAddr->set_group(TRANSPORT);
     multicastAddr->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::RAWTRANSPORT);
+            Middleware::RTIDDSPRO | Middleware::RAWTRANSPORT);
     create("multicastAddr", multicastAddr);
 
     Parameter<std::string> *transportVerbosity = new Parameter<std::string>();
     transportVerbosity->set_command_line_argument(
-            "-transportVerbosity", "<level>");
+            "-transportVerbosity",
+            "<level>");
     transportVerbosity->set_description(
             "Verbosity of the transport.\n"
             "Default: 0 (errors only)");
@@ -1066,7 +1080,8 @@ void ParameterManager::initialize()
     Parameter<std::string> *transportServerBindPort =
             new Parameter<std::string>("7400");
     transportServerBindPort->set_command_line_argument(
-            "-transportServerBindPort", "<p>");
+            "-transportServerBindPort",
+            "<p>");
     transportServerBindPort->set_description(
             "Port used by the transport to accept\n"
             "TCP/TLS connections <optional>.\nDefault: 7400");
@@ -1090,7 +1105,8 @@ void ParameterManager::initialize()
     Parameter<std::string> *transportPublicAddress =
             new Parameter<std::string>();
     transportPublicAddress->set_command_line_argument(
-            "-transportPublicAddress", "<ip>");
+            "-transportPublicAddress",
+            "<ip>");
     transportPublicAddress->set_description(
             "Public IP address and port (WAN address\n"
             "and port) (separated with ‘:’ ) related\n"
@@ -1106,7 +1122,8 @@ void ParameterManager::initialize()
     Parameter<std::string> *transportWanServerAddress =
             new Parameter<std::string>();
     transportWanServerAddress->set_command_line_argument(
-            "-transportWanServerAddress", "<a>");
+            "-transportWanServerAddress",
+            "<a>");
     transportWanServerAddress->set_description(
             "Address where to find the WAN Server\n"
             "Default: Not Set (Required)\n");
@@ -1117,9 +1134,10 @@ void ParameterManager::initialize()
     create("transportWanServerAddress", transportWanServerAddress);
 
     Parameter<std::string> *transportWanServerPort =
-        new Parameter<std::string>("3478");
+            new Parameter<std::string>("3478");
     transportWanServerPort->set_command_line_argument(
-            "-transportWanServerPort", "<p>");
+            "-transportWanServerPort",
+            "<p>");
     transportWanServerPort->set_description(
             "Port where to find the WAN Server.\nDefault: 3478");
     transportWanServerPort->set_type(T_STR);
@@ -1156,10 +1174,12 @@ void ParameterManager::initialize()
     Parameter<std::string> *transportCertAuthority =
             new Parameter<std::string>("");
     transportCertAuthority->set_command_line_argument(
-            "-transportCertAuthority", "<file>");
+            "-transportCertAuthority",
+            "<file>");
     transportCertAuthority->set_description(
             "Certificate authority file <optional>.\n"
-            "Default: \"" + TRANSPORT_CERTAUTHORITY_FILE + "\"");
+            "Default: \""
+            + TRANSPORT_CERTAUTHORITY_FILE + "\"");
     transportCertAuthority->set_type(T_STR);
     transportCertAuthority->set_extra_argument(YES);
     transportCertAuthority->set_group(TRANSPORT);
@@ -1171,7 +1191,9 @@ void ParameterManager::initialize()
      * if it's needed with the corresponding value.
      */
     Parameter<std::string> *transportCertFile = new Parameter<std::string>("");
-    transportCertFile->set_command_line_argument("-transportCertFile", "<file>");
+    transportCertFile->set_command_line_argument(
+            "-transportCertFile",
+            "<file>");
     transportCertFile->set_description(
             "Certificate file <optional>.\n"
             "Default (Publisher): \"" + TRANSPORT_CERTIFICATE_FILE_PUB + "\"\n"
@@ -1186,10 +1208,11 @@ void ParameterManager::initialize()
      * Set this parameter to a empty value by default. This will be set later
      * if it's needed with the corresponding value.
      */
-    Parameter<std::string> *transportPrivateKey
-            = new Parameter<std::string>("");
+    Parameter<std::string> *transportPrivateKey =
+            new Parameter<std::string>("");
     transportPrivateKey->set_command_line_argument(
-            "-transportPrivateKey", "<file>");
+            "-transportPrivateKey",
+            "<file>");
     transportPrivateKey->set_description(
             "Private key file <optional>.\n"
             "Default (Publisher): \"" + TRANSPORT_PRIVATEKEY_FILE_PUB + "\"\n"
@@ -1200,7 +1223,7 @@ void ParameterManager::initialize()
     transportPrivateKey->set_supported_middleware(Middleware::RTIDDSPRO);
     create("transportPrivateKey", transportPrivateKey);
 
-  #ifdef RTI_LANGUAGE_CPP_TRADITIONAL
+#ifdef RTI_LANGUAGE_CPP_TRADITIONAL
     ////////////////////////////////////////////////////////////////////////////
     // RAWTRANSPORT PARAMTER:
 
@@ -1227,24 +1250,24 @@ void ParameterManager::initialize()
     noBlockingSockets->set_group(RAWTRANSPORT);
     noBlockingSockets->set_supported_middleware(Middleware::RAWTRANSPORT);
     create("noBlockingSockets", noBlockingSockets);
-  #endif
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // SECURE PARAMETER:
-  #if defined (RTI_SECURE_PERFTEST) | defined (PERFTEST_CYCLONEDDS) | defined (PERFTEST_EPROSIMA_FASTDDS)
+#if defined(RTI_SECURE_PERFTEST) | defined(PERFTEST_CYCLONEDDS) \
+        | defined(PERFTEST_EPROSIMA_FASTDDS)
     Parameter<bool> *secureEncryptDiscovery = new Parameter<bool>(false);
     secureEncryptDiscovery->set_command_line_argument(
-            "-secureEncryptDiscovery", "");
+            "-secureEncryptDiscovery",
+            "");
     secureEncryptDiscovery->set_description("Encrypt discovery traffic");
     secureEncryptDiscovery->set_type(T_BOOL);
     secureEncryptDiscovery->set_extra_argument(NO);
     secureEncryptDiscovery->set_group(SECURE);
     secureEncryptDiscovery->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
-    create("secureEncryptDiscovery",  secureEncryptDiscovery);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
+    create("secureEncryptDiscovery", secureEncryptDiscovery);
 
     Parameter<bool> *secureSign = new Parameter<bool>(false);
     secureSign->set_command_line_argument("-secureSign", "");
@@ -1253,10 +1276,8 @@ void ParameterManager::initialize()
     secureSign->set_extra_argument(NO);
     secureSign->set_group(SECURE);
     secureSign->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureSign", secureSign);
 
     Parameter<bool> *secureEncryptBoth = new Parameter<bool>(false);
@@ -1266,10 +1287,8 @@ void ParameterManager::initialize()
     secureEncryptBoth->set_extra_argument(NO);
     secureEncryptBoth->set_group(SECURE);
     secureEncryptBoth->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureEncryptBoth", secureEncryptBoth);
 
     Parameter<bool> *secureEncryptData = new Parameter<bool>(false);
@@ -1279,10 +1298,8 @@ void ParameterManager::initialize()
     secureEncryptData->set_extra_argument(NO);
     secureEncryptData->set_group(SECURE);
     secureEncryptData->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureEncryptData", secureEncryptData);
 
     Parameter<bool> *secureEncryptSM = new Parameter<bool>(false);
@@ -1292,15 +1309,14 @@ void ParameterManager::initialize()
     secureEncryptSM->set_extra_argument(NO);
     secureEncryptSM->set_group(SECURE);
     secureEncryptSM->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureEncryptSM", secureEncryptSM);
 
     Parameter<std::string> *secureGovernanceFile = new Parameter<std::string>();
     secureGovernanceFile->set_command_line_argument(
-            "-secureGovernanceFile", "<file>");
+            "-secureGovernanceFile",
+            "<file>");
     secureGovernanceFile->set_description(
             "Governance file. If specified, the authentication,\n"
             "signing, and encryption arguments are ignored. The\n"
@@ -1310,31 +1326,31 @@ void ParameterManager::initialize()
     secureGovernanceFile->set_extra_argument(YES);
     secureGovernanceFile->set_group(SECURE);
     secureGovernanceFile->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureGovernanceFile", secureGovernanceFile);
 
-    Parameter<std::string> *securePermissionsFile = new Parameter<std::string>();
+    Parameter<std::string> *securePermissionsFile =
+            new Parameter<std::string>();
     securePermissionsFile->set_command_line_argument(
-            "-securePermissionsFile", "<file>");
+            "-securePermissionsFile",
+            "<file>");
     securePermissionsFile->set_description(
             "Permissions file <optional>.\n"
-            "Default: \"../../resource/secure/signed_PerftestPermissionsSub.xml\"");
+            "Default: "
+            "\"../../resource/secure/signed_PerftestPermissionsSub.xml\"");
     securePermissionsFile->set_type(T_STR);
     securePermissionsFile->set_extra_argument(YES);
     securePermissionsFile->set_group(SECURE);
     securePermissionsFile->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("securePermissionsFile", securePermissionsFile);
 
     Parameter<std::string> *secureCertAuthority = new Parameter<std::string>();
     secureCertAuthority->set_command_line_argument(
-            "-secureCertAuthority", "<file>");
+            "-secureCertAuthority",
+            "<file>");
     secureCertAuthority->set_description(
             "Certificate authority file <optional>.\n"
             "Default: \"../../resource/secure/cacert.pem\"");
@@ -1342,10 +1358,8 @@ void ParameterManager::initialize()
     secureCertAuthority->set_extra_argument(YES);
     secureCertAuthority->set_group(SECURE);
     secureCertAuthority->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureCertAuthority", secureCertAuthority);
 
     Parameter<std::string> *secureCertFile = new Parameter<std::string>();
@@ -1357,10 +1371,8 @@ void ParameterManager::initialize()
     secureCertFile->set_extra_argument(YES);
     secureCertFile->set_group(SECURE);
     secureCertFile->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureCertFile", secureCertFile);
 
     Parameter<std::string> *securePrivateKey = new Parameter<std::string>();
@@ -1372,10 +1384,8 @@ void ParameterManager::initialize()
     securePrivateKey->set_extra_argument(YES);
     securePrivateKey->set_group(SECURE);
     securePrivateKey->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("securePrivateKey", securePrivateKey);
 
     Parameter<std::string> *secureLibrary = new Parameter<std::string>();
@@ -1387,10 +1397,8 @@ void ParameterManager::initialize()
     secureLibrary->set_extra_argument(YES);
     secureLibrary->set_group(SECURE);
     secureLibrary->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     create("secureLibrary", secureLibrary);
 
     Parameter<int> *secureDebug = new Parameter<int>(1);
@@ -1400,10 +1408,8 @@ void ParameterManager::initialize()
     secureDebug->set_range(0, 7);
     secureDebug->set_group(SECURE);
     secureDebug->set_supported_middleware(
-            Middleware::RTIDDSPRO
-            | Middleware::CYCLONEDDS
-            | Middleware::EPROSIMAFASTDDS
-            | Middleware::RTIDDSMICRO);
+            Middleware::RTIDDSPRO | Middleware::CYCLONEDDS
+            | Middleware::EPROSIMAFASTDDS | Middleware::RTIDDSMICRO);
     secureDebug->set_internal(true);
     create("secureDebug", secureDebug);
 #endif
@@ -1424,25 +1430,27 @@ bool ParameterManager::parse(int argc, char *argv[])
     for (unsigned int i = 1; i < allArgs.size(); i++) {
         for (it = _parameterList.begin(); it != _parameterList.end(); it++) {
             if (IS_OPTION(
-                    allArgs[i].c_str(),
-                    it->second.get()->get_option().c_str())) {
+                        allArgs[i].c_str(),
+                        it->second.get()->get_option().c_str())) {
                 // Save the variable, it will be used several time.
                 p = it->second.get();
                 // NumArguments == 0
                 if (p->get_extra_argument() == NO) {
                     // Type is T_BOOL
                     if (p->get_type() == T_BOOL) {
-                        (static_cast<Parameter<bool>*>(
-                                it->second.get<bool>()))->set_value(true);
+                        (static_cast<Parameter<bool> *>(it->second.get<bool>()))
+                                ->set_value(true);
                     }
-                // NumArguments is 1 or optional
-                } else { // if (p->get_extra_argument() > NO) {
+                    // NumArguments is 1 or optional
+                } else {  // if (p->get_extra_argument() > NO) {
                     // Check for error in the number of arguments
-                    if (i + 1 >= allArgs.size() || allArgs[i + 1].find("-") == 0) {
+                    if (i + 1 >= allArgs.size()
+                        || allArgs[i + 1].find("-") == 0) {
                         if (p->get_extra_argument() == YES) {
-                            fprintf(stderr, "Missing '%s' after '%s'\n",
-                                p->get_arg().c_str(),
-                                p->get_option().c_str());
+                            fprintf(stderr,
+                                    "Missing '%s' after '%s'\n",
+                                    p->get_arg().c_str(),
+                                    p->get_option().c_str());
                             return false;
                         } else if (p->get_extra_argument() == POSSIBLE) {
                             p->set_isSet(true);
@@ -1455,14 +1463,15 @@ bool ParameterManager::parse(int argc, char *argv[])
                         if (!p->validate_str_range(allArgs[i])) {
                             success = false;
                         }
-                        (static_cast<Parameter<std::string>*>(
-                                it->second.get<std::string>()))->set_value(
-                                        allArgs[i]);
+                        (static_cast<Parameter<std::string> *>(
+                                 it->second.get<std::string>()))
+                                ->set_value(allArgs[i]);
                     }
                     // Type is T_NUMERIC_LLU
                     else if (p->get_type() == T_NUMERIC_LLU) {
                         if (sscanf(allArgs[i].c_str(), "%llu", &varLLU) != 1) {
-                            fprintf(stderr, "Cannot parse '%s' '%s', invalid input.\n",
+                            fprintf(stderr,
+                                    "Cannot parse '%s' '%s', invalid input.\n",
                                     p->get_arg().c_str(),
                                     p->get_option().c_str());
                             success = false;
@@ -1470,14 +1479,15 @@ bool ParameterManager::parse(int argc, char *argv[])
                         if (!p->validate_numeric_range(varLLU)) {
                             success = false;
                         }
-                        (static_cast<Parameter<unsigned long long>*>(
-                                it->second.get<unsigned long long>()))->set_value(
-                                        varLLU);
+                        (static_cast<Parameter<unsigned long long> *>(
+                                 it->second.get<unsigned long long>()))
+                                ->set_value(varLLU);
                     }
                     // Type is T_NUMERIC_LD
                     else if (p->get_type() == T_NUMERIC_LD) {
                         if (sscanf(allArgs[i].c_str(), "%ld", &varLD) != 1) {
-                            fprintf(stderr, "Cannot parse '%s' '%s', invalid input.\n",
+                            fprintf(stderr,
+                                    "Cannot parse '%s' '%s', invalid input.\n",
                                     p->get_arg().c_str(),
                                     p->get_option().c_str());
                             success = false;
@@ -1485,8 +1495,8 @@ bool ParameterManager::parse(int argc, char *argv[])
                         if (!p->validate_numeric_range(varLD)) {
                             success = false;
                         }
-                        (static_cast<Parameter<long>*>(
-                                it->second.get<long>()))->set_value(varLD);
+                        (static_cast<Parameter<long> *>(it->second.get<long>()))
+                                ->set_value(varLD);
                     }
                     // Type is T_NUMERIC_D
                     else if (p->get_type() == T_NUMERIC_D) {
@@ -1500,32 +1510,37 @@ bool ParameterManager::parse(int argc, char *argv[])
                         if (!p->validate_numeric_range(varD)) {
                             success = false;
                         }
-                        (static_cast<Parameter<int>*>(
-                                it->second.get<int>()))->set_value(varD);
+                        (static_cast<Parameter<int> *>(it->second.get<int>()))
+                                ->set_value(varD);
                     }
                     // Type is T_VECTOR_STR
                     else if (p->get_type() == T_VECTOR_STR) {
-                        if (NO_SPLIT == ((ParameterVector<std::string>*)it->
-                                second.get_vector<std::string>())->
-                                        get_parse_method()) {
+                        if (NO_SPLIT
+                            == ((ParameterVector<std::string> *)
+                                        it->second.get_vector<std::string>())
+                                       ->get_parse_method()) {
                             if (!p->validate_str_range(allArgs[i])) {
                                 success = false;
                             }
-                            (static_cast<ParameterVector<std::string>*>(
-                                    it->second.get_vector<std::string>()))->
-                                        set_value(allArgs[i]);
+                            (static_cast<ParameterVector<std::string> *>(
+                                     it->second.get_vector<std::string>()))
+                                    ->set_value(allArgs[i]);
                         }
                     }
                     // Type is T_VECTOR_NUMERIC
                     else if (p->get_type() == T_VECTOR_NUMERIC) {
-                        if (SPLIT == ((ParameterVector<unsigned long long>*)it->
-                                second.get_vector<unsigned long long>())->
-                                        get_parse_method()) {
+                        if (SPLIT
+                            == ((ParameterVector<unsigned long long> *) it
+                                        ->second
+                                        .get_vector<unsigned long long>())
+                                       ->get_parse_method()) {
                             std::vector<std::string> v = split(allArgs[i]);
                             for (unsigned int j = 0; j < v.size(); j++) {
-                                if (sscanf(v[j].c_str(), "%llu", &varLLU) != 1) {
+                                if (sscanf(v[j].c_str(), "%llu", &varLLU)
+                                    != 1) {
                                     fprintf(stderr,
-                                            "Cannot parse '%s' '%s', invalid input.\n",
+                                            "Cannot parse '%s' '%s', invalid "
+                                            "input.\n",
                                             p->get_arg().c_str(),
                                             p->get_option().c_str());
                                     success = false;
@@ -1533,10 +1548,10 @@ bool ParameterManager::parse(int argc, char *argv[])
                                 if (!p->validate_numeric_range(varLLU)) {
                                     success = false;
                                 }
-                                (static_cast<ParameterVector<unsigned long long>*>
-                                        (it->second.get_vector
-                                                <unsigned long long>()))->
-                                                        set_value(varLLU);
+                                (static_cast<ParameterVector<unsigned long long>
+                                                     *>(it->second.get_vector<
+                                                        unsigned long long>()))
+                                        ->set_value(varLLU);
                             }
                         }
                     }
@@ -1544,14 +1559,16 @@ bool ParameterManager::parse(int argc, char *argv[])
                     else if (p->get_type() == T_PAIR_NUMERIC_STR) {
                         std::vector<std::string> v = split(allArgs[i]);
                         if (v.size() != 2) {
-                            fprintf(stderr, "Missing '%s' after '%s'\n",
-                                p->get_arg().c_str(),
-                                p->get_option().c_str());
+                            fprintf(stderr,
+                                    "Missing '%s' after '%s'\n",
+                                    p->get_arg().c_str(),
+                                    p->get_option().c_str());
                             return false;
                         } else {
                             if (sscanf(v[0].c_str(), "%llu", &varLLU) != 1) {
                                 fprintf(stderr,
-                                        "Cannot parse '%s' '%s', invalid input.\n",
+                                        "Cannot parse '%s' '%s', invalid "
+                                        "input.\n",
                                         p->get_arg().c_str(),
                                         p->get_option().c_str());
                                 success = false;
@@ -1562,12 +1579,13 @@ bool ParameterManager::parse(int argc, char *argv[])
                             if (!p->validate_str_range(v[1])) {
                                 success = false;
                             }
-                            (static_cast<ParameterPair<unsigned long long,
-                                    std::string>*>(it->second.get_pair<
-                                            unsigned long long,
-                                                    std::string>()))->
-                                                            set_value(varLLU,
-                                                                    v[1]);
+                            (static_cast<ParameterPair<
+                                     unsigned long long,
+                                     std::string> *>(
+                                     it->second.get_pair<
+                                             unsigned long long,
+                                             std::string>()))
+                                    ->set_value(varLLU, v[1]);
                         }
                     }
                 }
@@ -1575,7 +1593,8 @@ bool ParameterManager::parse(int argc, char *argv[])
             }
         }
         if (it == _parameterList.end()) {
-            fprintf(stderr, "Cannot parse '%s', invalid input.\n",
+            fprintf(stderr,
+                    "Cannot parse '%s', invalid input.\n",
                     allArgs[i].c_str());
             success = false;
         }
@@ -1591,40 +1610,42 @@ std::string ParameterManager::display_help()
     std::map<Group, std::string> output;
     for (unsigned int i = GENERAL; i != RAWTRANSPORT + 1; i++) {
         switch (static_cast<Group>(i)) {
-            case GENERAL:
-                output[static_cast<Group>(i)] +=
+        case GENERAL:
+            output[static_cast<Group>(i)] +=
                     get_center_header_help_line("GENERAL");
-                break;
-            case PUB:
-                output[static_cast<Group>(i)] +=
-                        get_center_header_help_line("PUBLISHER");
-                break;
-            case SUB:
-                output[static_cast<Group>(i)] +=
-                        get_center_header_help_line("SUBSCRIBER");
-                break;
-            case TRANSPORT:
-                output[static_cast<Group>(i)] +=
-                        get_center_header_help_line("TRANSPORT");
-                break;
-          #if defined (RTI_SECURE_PERFTEST) | (PERFTEST_CYCLONEDDS) | (PERFTEST_EPROSIMA_FASTDDS)
-            case SECURE:
-                output[static_cast<Group>(i)] +=
-                        get_center_header_help_line("SECURE");
-                break;
-          #endif
-            case RAWTRANSPORT:
-                output[static_cast<Group>(i)] +=
-                        get_center_header_help_line("RAWTRANSPORT");
-                break;
-            default:
-                break;
+            break;
+        case PUB:
+            output[static_cast<Group>(i)] +=
+                    get_center_header_help_line("PUBLISHER");
+            break;
+        case SUB:
+            output[static_cast<Group>(i)] +=
+                    get_center_header_help_line("SUBSCRIBER");
+            break;
+        case TRANSPORT:
+            output[static_cast<Group>(i)] +=
+                    get_center_header_help_line("TRANSPORT");
+            break;
+#if defined(RTI_SECURE_PERFTEST) | (PERFTEST_CYCLONEDDS) \
+        | (PERFTEST_EPROSIMA_FASTDDS)
+        case SECURE:
+            output[static_cast<Group>(i)] +=
+                    get_center_header_help_line("SECURE");
+            break;
+#endif
+        case RAWTRANSPORT:
+            output[static_cast<Group>(i)] +=
+                    get_center_header_help_line("RAWTRANSPORT");
+            break;
+        default:
+            break;
         }
     }
     oss << std::string(100, '*') << std::endl;
     oss << "Usage:\t perftest_cpp [options]\n"
         << "Where [options] are:\n";
-    output[GENERAL] += "\t-help                           - "
+    output[GENERAL] +=
+            "\t-help                           - "
             "Print this usage message and exit\n";
 
     for (it = _parameterList.begin(); it != _parameterList.end(); it++) {
@@ -1647,7 +1668,7 @@ bool ParameterManager::check_help(int argc, char *argv[])
     std::vector<std::string> allArgs(argv, argv + argc);
     for (unsigned int i = 1; i < allArgs.size(); i++) {
         if (allArgs[i] == "-help" || allArgs[i] == "-h") {
-            std::cout << display_help() <<'\n';
+            std::cout << display_help() << '\n';
             return true;
         }
     }
@@ -1700,11 +1721,14 @@ bool ParameterManager::check_incompatible_parameters()
     for (it = _parameterList.begin(); it != _parameterList.end(); it++) {
         if (it->second.get()->get_isSet()) {
             if (it->second.get()->get_group() == PUB && get<bool>("sub")) {
-                fprintf(stderr, "Cannot use '%s' while setting '-sub'.\n",
+                fprintf(stderr,
+                        "Cannot use '%s' while setting '-sub'.\n",
                         it->second.get()->get_option().c_str());
                 success = false;
-            } else if (it->second.get()->get_group() == SUB && get<bool>("pub")) {
-                fprintf(stderr, "Cannot use '%s' while setting '-pub'.\n",
+            } else if (
+                    it->second.get()->get_group() == SUB && get<bool>("pub")) {
+                fprintf(stderr,
+                        "Cannot use '%s' while setting '-pub'.\n",
                         it->second.get()->get_option().c_str());
                 success = false;
             }
@@ -1715,18 +1739,17 @@ bool ParameterManager::check_incompatible_parameters()
 }
 
 
-std::vector<std::string> ParameterManager::split(
-        std::string var,
-        std::string delimiter)
+std::vector<std::string>
+        ParameterManager::split(std::string var, std::string delimiter)
 {
     std::vector<std::string> v;
     char *pch;
     char *str = new char[var.length() + 1];
     strcpy(str, var.c_str());
-    pch = strtok (str, delimiter.c_str());
+    pch = strtok(str, delimiter.c_str());
     while (pch != NULL) {
         v.push_back(pch);
-        pch = strtok (NULL, delimiter.c_str());
+        pch = strtok(NULL, delimiter.c_str());
     }
     delete[] str;
     return v;
@@ -1739,15 +1762,10 @@ std::string ParameterManager::get_center_header_help_line(std::string name)
     unsigned int maxWithLine = 80;
     std::string separatorBar =
             std::string((int) ((maxWithLine - name.length() - 2) / 2), '=');
-    line << "\n\n\t"
-         << separatorBar
-         << " "
-         << name
-         << " "
-         << separatorBar
+    line << "\n\n\t" << separatorBar << " " << name << " " << separatorBar
          << "\n\n";
     if (line.str().length() < maxWithLine) {
-        //If name is odd, then add one more '='
+        // If name is odd, then add one more '='
         line << '=';
     }
     return line.str();
@@ -1758,7 +1776,7 @@ bool ParameterManager::group_is_used(Group group)
     std::map<std::string, AnyParameter>::iterator it;
     for (it = _parameterList.begin(); it != _parameterList.end(); it++) {
         if (it->second.get()->get_isSet()
-                && it->second.get()->get_group() == group) {
+            && it->second.get()->get_group() == group) {
             return true;
         }
     }

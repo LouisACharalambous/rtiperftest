@@ -1,2 +1,2 @@
-V	291021140416Z		01	unknown	/C=US/ST=CA/O=Real Time Innovations/CN=perftest/emailAddress=pub@rti.com
-V	291021140420Z		02	unknown	/C=US/ST=CA/O=Real Time Innovations/CN=perftest/emailAddress=sub@rti.com
+V	310211144938Z		01	unknown	/C=GB/ST=City of London/O=City University of London/CN=perftest/emailAddress=pub@city.ac.uk
+V	310211144939Z		02	unknown	/C=GB/ST=City of London/O=City University of London/CN=perftest/emailAddress=sub@city.ac.uk
